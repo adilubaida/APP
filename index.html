@@ -1,111 +1,1109 @@
-console.log("script loaded");
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>RiceTrade Pro</title>
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a73e8">
+<meta name="description" content="RiceTrade Pro - Business Management System">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#3b82f6">
-
+<title>RiceTrade Pro</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <style>
-body{font-family:system-ui;margin:0;background:#0b1220;color:#fff}
-.hidden{display:none}
-.login{height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:20px}
-input,button{padding:12px;margin:6px;width:100%;max-width:320px;border-radius:10px;border:none}
-button{background:#3b82f6;color:#fff;cursor:pointer}
-.app{display:flex;height:100vh}
-.sidebar{width:220px;background:#0f172a;padding:10px}
-.sidebar div{padding:10px;cursor:pointer}
-.sidebar div:hover{background:#1e293b}
-.main{flex:1;padding:15px;overflow:auto}
-.card{background:#111a2e;padding:12px;margin-bottom:10px;border-radius:12px}
-@media(max-width:768px){.sidebar{display:none}}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;color:#1a1a1a;font-size:14px;}
+.app{display:flex;height:100dvh;overflow:hidden;}
+.sidebar{width:210px;min-width:210px;background:#fff;border-right:1px solid #e5e5e5;display:flex;flex-direction:column;}
+.logo{padding:16px;border-bottom:1px solid #e5e5e5;display:flex;align-items:center;gap:8px;}
+.logo i{font-size:22px;color:#1a73e8;}
+.logo-title{font-size:15px;font-weight:600;color:#1a1a1a;}
+.logo-sub{font-size:10px;color:#999;}
+.nav{flex:1;padding:8px;overflow-y:auto;}
+.nav-section{font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.08em;padding:10px 8px 4px;}
+.nav-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:13px;color:#555;margin-bottom:2px;transition:background 0.12s;}
+.nav-item:hover{background:#f0f4ff;color:#1a73e8;}
+.nav-item.active{background:#e8f0fe;color:#1a73e8;font-weight:500;}
+.nav-item i{font-size:16px;}
+.user-info{padding:12px;border-top:1px solid #e5e5e5;}
+.avatar{width:32px;height:32px;border-radius:50%;background:#e8f0fe;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#1a73e8;}
+.user-badge{display:flex;align-items:center;gap:8px;}
+.user-name{font-size:12px;font-weight:500;}
+.user-role{font-size:10px;color:#999;}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{padding:12px 16px;border-bottom:1px solid #e5e5e5;display:flex;align-items:center;justify-content:space-between;background:#fff;}
+.page-title{font-size:16px;font-weight:600;}
+.btn{padding:7px 14px;border-radius:8px;border:1px solid #ddd;background:#fff;color:#1a1a1a;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:background 0.12s;}
+.btn:hover{background:#f5f5f5;}
+.btn-primary{background:#1a73e8;color:#fff;border-color:#1a73e8;}
+.btn-primary:hover{background:#1557b0;}
+.btn-sm{padding:5px 10px;font-size:12px;}
+.btn-danger{background:#fce8e6;color:#c5221f;border-color:#f5c6c5;}
+.btn-success{background:#e6f4ea;color:#188038;border-color:#c6e8ce;}
+.btn-warning{background:#fef7e0;color:#b06000;border-color:#f5e6a3;}
+.content{flex:1;overflow-y:auto;padding:16px;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.metric-card{background:#fff;border-radius:10px;padding:14px;border:1px solid #e5e5e5;}
+.metric-label{font-size:11px;color:#999;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;}
+.metric-value{font-size:22px;font-weight:600;color:#1a1a1a;}
+.metric-sub{font-size:11px;color:#999;margin-top:2px;}
+.card{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:16px;margin-bottom:16px;}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.card-title{font-size:14px;font-weight:600;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;padding:8px 10px;font-size:11px;color:#999;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #e5e5e5;font-weight:500;}
+td{padding:10px;border-bottom:1px solid #f0f0f0;color:#1a1a1a;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#fafafa;}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500;}
+.badge-green{background:#e6f4ea;color:#188038;}
+.badge-amber{background:#fef7e0;color:#b06000;}
+.badge-red{background:#fce8e6;color:#c5221f;}
+.badge-blue{background:#e8f0fe;color:#1a73e8;}
+.badge-gray{background:#f5f5f5;color:#666;}
+.form-group{margin-bottom:14px;}
+.form-label{font-size:12px;color:#555;margin-bottom:5px;display:block;font-weight:500;}
+.form-input{width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a1a;font-size:13px;font-family:inherit;}
+.form-input:focus{outline:none;border-color:#1a73e8;box-shadow:0 0 0 3px rgba(26,115,232,0.1);}
+select.form-input{cursor:pointer;}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:1000;padding:16px;}
+.modal{background:#fff;border-radius:12px;padding:20px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;}
+.modal-title{font-size:15px;font-weight:600;margin-bottom:16px;}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;border-top:1px solid #e5e5e5;padding-top:14px;}
+.stat-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0;}
+.stat-row:last-child{border-bottom:none;}
+.progress-bar{height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:3px;background:#1a73e8;}
+.empty-state{text-align:center;padding:40px 20px;color:#999;}
+.empty-state i{font-size:32px;margin-bottom:8px;display:block;}
+.trader-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:#e8f0fe;color:#1a73e8;}
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f5f5f5;padding:16px;}
+.login-card{background:#fff;border:1px solid #e5e5e5;border-radius:16px;padding:32px;width:100%;max-width:340px;}
+.login-logo{text-align:center;margin-bottom:24px;}
+.login-logo i{font-size:40px;color:#1a73e8;}
+.login-logo h2{font-size:20px;font-weight:700;margin-top:8px;}
+.login-logo p{font-size:12px;color:#999;margin-top:4px;}
+.hamburger{display:none;background:none;border:none;font-size:22px;cursor:pointer;padding:4px;color:#1a1a1a;}
+.sidebar-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.3);z-index:99;}
+.settings-section{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:16px;margin-bottom:16px;}
+.settings-section-title{font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.settings-section-title i{font-size:16px;color:#1a73e8;}
+.trader-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f0f0;}
+.trader-row:last-child{border-bottom:none;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;opacity:0;transition:opacity 0.3s;pointer-events:none;}
+.toast.show{opacity:1;}
+.danger-zone{background:#fff5f5;border:1px solid #f5c6c5;border-radius:12px;padding:16px;margin-bottom:16px;}
+.danger-zone-title{font-size:13px;font-weight:600;color:#c5221f;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+@media(max-width:700px){
+  .hamburger{display:flex;align-items:center;}
+  .sidebar{position:fixed;top:0;left:-220px;height:100%;z-index:100;transition:left 0.25s;box-shadow:2px 0 12px rgba(0,0,0,0.1);}
+  .sidebar.open{left:0;}
+  .sidebar-overlay.open{display:block;}
+  .grid-4{grid-template-columns:repeat(2,1fr);}
+  .grid-2{grid-template-columns:1fr;}
+  .grid-3{grid-template-columns:1fr 1fr;}
+  .content{padding:12px;}
+  table{font-size:12px;}
+  td,th{padding:7px 6px;}
+}
 </style>
 </head>
-
 <body>
+<div id="toast" class="toast"></div>
 
-<div id="login" class="login">
-<h2>RiceTrade Pro</h2>
-<input id="user" placeholder="username">
-<input id="pass" type="password" placeholder="password">
-<button onclick="login()">Login</button>
+<div id="login-screen">
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">
+      <i class="ti ti-wheat"></i>
+      <h2 id="login-biz-name">RiceTrade Pro</h2>
+      <p>Business Management System</p>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Username</label>
+      <input class="form-input" id="login-user" type="text" placeholder="Enter username" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input class="form-input" id="login-pass" type="password" placeholder="Enter password" autocomplete="current-password">
+    </div>
+    <div id="login-error" style="color:#c5221f;font-size:12px;margin-bottom:10px;display:none;">Incorrect username or password.</div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:10px;" id="login-btn">Sign in</button>
+  </div>
+</div>
 </div>
 
-<div id="app" class="app hidden">
-
-<div class="sidebar">
-<div onclick="show('dashboard')">Dashboard</div>
-<div onclick="show('inventory')">Inventory</div>
-<div onclick="show('sales')">Sales</div>
-<div onclick="show('expenses')">Expenses</div>
-<div onclick="show('transfer')">Transfers</div>
-<div onclick="logout()">Logout</div>
+<div id="app-screen" style="display:none;">
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+<div class="app">
+  <div class="sidebar" id="sidebar">
+    <div class="logo">
+      <i class="ti ti-wheat"></i>
+      <div>
+        <div class="logo-title" id="sidebar-biz-name">RiceTrade Pro</div>
+        <div class="logo-sub">Management System</div>
+      </div>
+    </div>
+    <div class="nav">
+      <div class="nav-section">Main</div>
+      <div class="nav-item active" id="nav-dashboard"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
+      <div class="nav-item" id="nav-sales"><i class="ti ti-receipt"></i>Daily Sales</div>
+      <div class="nav-item" id="nav-inventory"><i class="ti ti-package"></i>Inventory</div>
+      <div class="nav-item" id="nav-expenses"><i class="ti ti-cash"></i>Expenses</div>
+      <div class="nav-section" id="owner-nav-section">Owner</div>
+      <div class="nav-item" id="nav-traders"><i class="ti ti-users"></i>Traders</div>
+      <div class="nav-item" id="nav-reports"><i class="ti ti-chart-bar"></i>Reports</div>
+      <div class="nav-item" id="nav-settings"><i class="ti ti-settings"></i>Settings</div>
+    </div>
+    <div class="user-info">
+      <div class="user-badge">
+        <div class="avatar" id="sidebar-avatar">OW</div>
+        <div>
+          <div class="user-name" id="sidebar-name">Owner</div>
+          <div class="user-role" id="sidebar-role">Administrator</div>
+        </div>
+      </div>
+      <button class="btn btn-sm" style="width:100%;margin-top:8px;justify-content:center;" id="logout-btn"><i class="ti ti-logout"></i>Sign out</button>
+    </div>
+  </div>
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="hamburger" id="hamburger-btn"><i class="ti ti-menu-2"></i></button>
+        <div class="page-title" id="page-title">Dashboard</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:11px;color:#999;" id="topbar-date"></span>
+        <span id="owner-badge" class="badge badge-blue" style="display:none;"><i class="ti ti-shield-check" style="font-size:11px;"></i>Owner</span>
+      </div>
+    </div>
+    <div class="content" id="main-content"></div>
+  </div>
 </div>
-
-<div class="main">
-<h3 id="title">Dashboard</h3>
-<div id="content"></div>
-</div>
-
+<div id="modal-container"></div>
 </div>
 
 <script>
-let user=null;
+/* ── UTILITIES ─────────────────────────────────────────────── */
+const PKR = n => '₨ ' + Number(n||0).toLocaleString('en-PK',{maximumFractionDigits:0});
+const today = () => new Date().toISOString().split('T')[0];
 
-let db={
-users:{owner:{pass:"123",role:"owner"},trader:{pass:"123",role:"trader"}},
-inventory:[{name:"Basmati Rice",qty:100}],
-sales:[],
-expenses:[],
-transfers:[]
+function showToast(msg, dur){
+  dur = dur||2500;
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, dur);
+}
+
+function confirmDlg(msg){
+  return window.confirm(msg);
+}
+
+/* ── STATE ─────────────────────────────────────────────────── */
+var DEFAULT_STATE = {
+  bizName: 'RiceTrade Pro',
+  users: {
+    owner:   {name:'Owner',    role:'Administrator', initials:'OW', isOwner:true,  password:'1234'},
+    trader1: {name:'Ahmad Khan', role:'Trader',      initials:'AK', isOwner:false, password:'1234'},
+    trader2: {name:'Bilal Raza', role:'Trader',      initials:'BR', isOwner:false, password:'1234'}
+  },
+  traders:[
+    {id:1, name:'Ahmad Khan', username:'trader1', phone:'0300-1234567', area:'Lahore',     status:'active', joinDate:'2024-01-15'},
+    {id:2, name:'Bilal Raza', username:'trader2', phone:'0311-9876543', area:'Karachi',    status:'active', joinDate:'2024-03-20'},
+    {id:3, name:'Usman Ali',  username:'trader3', phone:'0321-5554444', area:'Faisalabad', status:'active', joinDate:'2024-06-01'}
+  ],
+  inventory:[
+    {id:1, name:'Basmati (Long Grain)', sku:'BAS-LG',   qty:450,  totalCost:3825000, buyPrice:8500,  variety:'Basmati',      size:'50kg'},
+    {id:2, name:'Basmati (25kg bags)',  sku:'BAS-25',   qty:200,  totalCost:880000,  buyPrice:4400,  variety:'Basmati',      size:'25kg'},
+    {id:3, name:'Jasmine Rice (50kg)',  sku:'JAS-50',   qty:320,  totalCost:2304000, buyPrice:7200,  variety:'Jasmine',      size:'50kg'},
+    {id:4, name:'Irri-6 (50kg)',        sku:'IRRI-50',  qty:580,  totalCost:3190000, buyPrice:5500,  variety:'Irri-6',       size:'50kg'},
+    {id:5, name:'Irri-6 (5kg)',         sku:'IRRI-5',   qty:1200, totalCost:780000,  buyPrice:650,   variety:'Irri-6',       size:'5kg'},
+    {id:6, name:'Super Kernel (50kg)',  sku:'SK-50',    qty:95,   totalCost:874000,  buyPrice:9200,  variety:'Super Kernel', size:'50kg'}
+  ],
+  sales:[
+    {id:1, date:'2026-06-27', traderId:1, traderName:'Ahmad Khan', item:'Basmati (Long Grain)', itemId:1, qty:20, unitPrice:9800, total:196000, buyer:'Al-Falah Traders',   status:'paid'},
+    {id:2, date:'2026-06-27', traderId:2, traderName:'Bilal Raza', item:'Irri-6 (50kg)',        itemId:4, qty:40, unitPrice:6300, total:252000, buyer:'Siddiqui & Sons',     status:'paid'},
+    {id:3, date:'2026-06-26', traderId:1, traderName:'Ahmad Khan', item:'Jasmine Rice (50kg)',  itemId:3, qty:15, unitPrice:8400, total:126000, buyer:'Rahman Enterprises',  status:'pending'},
+    {id:4, date:'2026-06-26', traderId:3, traderName:'Usman Ali',  item:'Irri-6 (5kg)',         itemId:5, qty:200,unitPrice:750,  total:150000, buyer:'City Mart',           status:'paid'},
+    {id:5, date:'2026-06-25', traderId:2, traderName:'Bilal Raza', item:'Super Kernel (50kg)',  itemId:6, qty:10, unitPrice:10500,total:105000, buyer:'Karachi Wholesale',   status:'paid'}
+  ],
+  expenses:[
+    {id:1, date:'2026-06-27', category:'Fuel',      amount:12000, description:'Delivery truck fuel - Lahore run',       traderId:1, traderName:'Ahmad Khan', receipt:'EXP-001'},
+    {id:2, date:'2026-06-27', category:'Transport', amount:35000, description:'Freight charges - Karachi to Lahore',    traderId:2, traderName:'Bilal Raza', receipt:'EXP-002'},
+    {id:3, date:'2026-06-26', category:'Labour',    amount:8500,  description:'Loading/unloading wages',                traderId:1, traderName:'Ahmad Khan', receipt:'EXP-003'},
+    {id:4, date:'2026-06-26', category:'Other',     amount:5000,  description:'Warehouse rent (partial)',               traderId:null, traderName:'Owner',   receipt:'EXP-004'},
+    {id:5, date:'2026-06-25', category:'Fuel',      amount:9500,  description:'Delivery van fuel - Faisalabad',         traderId:3, traderName:'Usman Ali',  receipt:'EXP-005'}
+  ]
 };
 
-function login(){
-let u=document.getElementById("user").value;
-let p=document.getElementById("pass").value;
+var STATE = {};
+var currentUser = null;
 
-if(db.users[u] && db.users[u].pass===p){
-user={name:u,role:db.users[u].role};
-document.getElementById("login").classList.add("hidden");
-document.getElementById("app").classList.remove("hidden");
-show("dashboard");
-}else alert("Wrong login");
+function saveState(){ try{ localStorage.setItem('ricetrade_v3', JSON.stringify(STATE)); }catch(e){} }
+function loadState(){
+  try{
+    var s = localStorage.getItem('ricetrade_v3');
+    if(s){ STATE = JSON.parse(s); }
+    else { STATE = JSON.parse(JSON.stringify(DEFAULT_STATE)); }
+    // migrate: ensure every inventory item has totalCost
+    STATE.inventory.forEach(function(i){
+      if(!i.totalCost) i.totalCost = (i.buyPrice||0) * (i.qty||0);
+    });
+  } catch(e){ STATE = JSON.parse(JSON.stringify(DEFAULT_STATE)); }
+}
+loadState();
+
+/* ── AVG PRICE HELPER ──────────────────────────────────────── */
+function calcAvgPrice(item){
+  if(!item.qty || item.qty <= 0) return item.buyPrice || 0;
+  return Math.round((item.totalCost || 0) / item.qty);
 }
 
-function logout(){location.reload();}
+/* ── MODAL ─────────────────────────────────────────────────── */
+function openModal(html){
+  document.getElementById('modal-container').innerHTML =
+    '<div class="modal-overlay" id="modal-overlay"><div class="modal">' + html + '</div></div>';
+  document.getElementById('modal-overlay').addEventListener('click', function(e){
+    if(e.target === this) closeModal();
+  });
+}
+function closeModal(){ document.getElementById('modal-container').innerHTML = ''; }
 
-function show(page){
-document.getElementById("title").innerText=page.toUpperCase();
-let html="";
-
-if(page==="dashboard"){
-html=`<div class="card">Welcome ${user.name} (${user.role})</div>`;
+/* ── SIDEBAR ───────────────────────────────────────────────── */
+function openSidebar(){
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebar-overlay').classList.add('open');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
 }
 
-if(page==="inventory"){
-db.inventory.forEach(i=>{
-html+=`<div class="card">${i.name} | ${i.qty}</div>`;
+/* ── AUTH ──────────────────────────────────────────────────── */
+function doLogin(){
+  var u = document.getElementById('login-user').value.trim().toLowerCase();
+  var p = document.getElementById('login-pass').value;
+  var user = STATE.users[u];
+  if(user && p === user.password){
+    currentUser = {name:user.name, role:user.role, initials:user.initials, isOwner:user.isOwner, username:u};
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'block';
+    document.getElementById('sidebar-name').textContent = currentUser.name;
+    document.getElementById('sidebar-role').textContent = currentUser.role;
+    document.getElementById('sidebar-avatar').textContent = currentUser.initials;
+    document.getElementById('sidebar-biz-name').textContent = STATE.bizName || 'RiceTrade Pro';
+    document.getElementById('login-biz-name').textContent  = STATE.bizName || 'RiceTrade Pro';
+    document.getElementById('topbar-date').textContent = new Date().toLocaleDateString('en-PK',{weekday:'short',year:'numeric',month:'short',day:'numeric'});
+    if(currentUser.isOwner){
+      document.getElementById('owner-badge').style.display = 'inline-flex';
+      document.getElementById('owner-nav-section').style.display = '';
+      document.getElementById('nav-traders').style.display = '';
+      document.getElementById('nav-reports').style.display = '';
+      document.getElementById('nav-settings').style.display = '';
+    } else {
+      document.getElementById('owner-badge').style.display = 'none';
+      document.getElementById('owner-nav-section').style.display = 'none';
+      document.getElementById('nav-traders').style.display = 'none';
+      document.getElementById('nav-reports').style.display = 'none';
+      document.getElementById('nav-settings').style.display = 'none';
+      document.getElementById('sidebar-avatar').style.background = '#e6f4ea';
+      document.getElementById('sidebar-avatar').style.color = '#188038';
+    }
+    showPage('dashboard');
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+function doLogout(){
+  currentUser = null;
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('login-error').style.display = 'none';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+}
+
+/* ── PAGE ROUTER ───────────────────────────────────────────── */
+var PAGE_TITLES = {dashboard:'Dashboard', sales:'Daily Sales', inventory:'Inventory', expenses:'Expenses', traders:'Traders', reports:'Reports', settings:'Settings'};
+var PAGE_RENDERERS = {};
+
+function showPage(page){
+  document.querySelectorAll('.nav-item').forEach(function(el){ el.classList.remove('active'); });
+  var navEl = document.getElementById('nav-'+page);
+  if(navEl) navEl.classList.add('active');
+  document.getElementById('page-title').textContent = PAGE_TITLES[page] || page;
+  document.getElementById('main-content').innerHTML = '';
+  closeModal();
+  closeSidebar();
+  if(PAGE_RENDERERS[page]) PAGE_RENDERERS[page]();
+}
+
+/* ── STATIC WIRING (runs once DOM ready) ───────────────────── */
+document.addEventListener('DOMContentLoaded', function(){
+  document.getElementById('login-btn').addEventListener('click', doLogin);
+  document.getElementById('login-pass').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+  document.getElementById('logout-btn').addEventListener('click', doLogout);
+  document.getElementById('hamburger-btn').addEventListener('click', openSidebar);
+  document.getElementById('sidebar-overlay').addEventListener('click', closeSidebar);
+
+  document.getElementById('nav-dashboard').addEventListener('click', function(){ showPage('dashboard'); });
+  document.getElementById('nav-sales').addEventListener('click',     function(){ showPage('sales'); });
+  document.getElementById('nav-inventory').addEventListener('click', function(){ showPage('inventory'); });
+  document.getElementById('nav-expenses').addEventListener('click',  function(){ showPage('expenses'); });
+  document.getElementById('nav-traders').addEventListener('click',   function(){ showPage('traders'); });
+  document.getElementById('nav-reports').addEventListener('click',   function(){ showPage('reports'); });
+  document.getElementById('nav-settings').addEventListener('click',  function(){ showPage('settings'); });
 });
+
+/* ══════════════════════════════════════════════════════════════
+   DASHBOARD
+══════════════════════════════════════════════════════════════ */
+PAGE_RENDERERS.dashboard = function(){
+  var td = today();
+  var totalSales   = STATE.sales.reduce(function(a,s){ return a+s.total; }, 0);
+  var todaySales   = STATE.sales.filter(function(s){ return s.date===td; }).reduce(function(a,s){ return a+s.total; }, 0);
+  var totalExp     = STATE.expenses.reduce(function(a,e){ return a+e.amount; }, 0);
+  var totalInvQty  = STATE.inventory.reduce(function(a,i){ return a+i.qty; }, 0);
+  var lowStock     = STATE.inventory.filter(function(i){ return i.qty<100; }).length;
+  var profit       = totalSales - totalExp;
+  var recentSales  = (currentUser.isOwner ? STATE.sales : STATE.sales.filter(function(s){ return s.traderName===currentUser.name; })).slice(0,5);
+
+  var traderHtml = '';
+  if(currentUser.isOwner){
+    traderHtml = STATE.traders.map(function(t){
+      var ts = STATE.sales.filter(function(s){ return s.traderId===t.id; }).reduce(function(a,s){ return a+s.total; },0);
+      var te = STATE.expenses.filter(function(e){ return e.traderId===t.id; }).reduce(function(a,e){ return a+e.amount; },0);
+      var ini = t.name.split(' ').map(function(x){ return x[0]; }).join('');
+      return '<div class="stat-row">'
+        +'<div style="display:flex;align-items:center;gap:8px;">'
+        +'<div class="trader-avatar">'+ini+'</div><span>'+t.name+'</span></div>'
+        +'<div style="text-align:right;"><div style="font-weight:600;">'+PKR(ts)+'</div>'
+        +'<div style="font-size:11px;color:#999;">Exp: '+PKR(te)+'</div></div></div>';
+    }).join('');
+  }
+
+  var salesRows = '';
+  if(recentSales.length){
+    recentSales.forEach(function(s){
+      salesRows += '<tr>'
+        +'<td style="color:#999;font-size:11px;">'+s.date+'</td>'
+        +'<td>'+s.item+'</td>'
+        +(currentUser.isOwner?'<td>'+s.traderName+'</td>':'')
+        +'<td style="font-weight:600;">'+PKR(s.total)+'</td>'
+        +'<td><span class="badge '+(s.status==='paid'?'badge-green':'badge-amber')+'">'+s.status+'</span></td>'
+        +'</tr>';
+    });
+  } else {
+    salesRows = '<tr><td colspan="5"><div class="empty-state" style="padding:20px;"><p>No sales yet</p></div></td></tr>';
+  }
+
+  var invRows = STATE.inventory.map(function(i){
+    var pct = Math.min(100, i.qty/20);
+    var barColor = i.qty<100?'#f29900':'#1a73e8';
+    return '<div class="stat-row">'
+      +'<span style="font-size:12px;">'+i.name+'</span>'
+      +'<div style="display:flex;align-items:center;gap:8px;">'
+      +'<div class="progress-bar" style="width:70px;">'
+      +'<div class="progress-fill" style="width:'+pct+'%;background:'+barColor+';"></div></div>'
+      +'<span style="font-size:12px;font-weight:600;min-width:55px;text-align:right;">'+i.qty+' bags</span>'
+      +'</div></div>';
+  }).join('');
+
+  var expCatHtml = ['Fuel','Transport','Labour','Other'].map(function(cat){
+    var amt = STATE.expenses.filter(function(e){ return e.category===cat&&(currentUser.isOwner||e.traderName===currentUser.name); }).reduce(function(a,e){ return a+e.amount; },0);
+    var icons = {Fuel:'ti-gas-station',Transport:'ti-truck',Labour:'ti-hammer',Other:'ti-dots'};
+    return '<div class="stat-row">'
+      +'<div style="display:flex;align-items:center;gap:8px;">'
+      +'<i class="ti '+icons[cat]+'" style="font-size:15px;color:#999;"></i><span>'+cat+'</span></div>'
+      +'<span style="font-weight:600;">'+PKR(amt)+'</span></div>';
+  }).join('');
+
+  var mc = document.getElementById('main-content');
+  mc.innerHTML =
+    '<div class="grid-4">'
+      +'<div class="metric-card"><div class="metric-label">Today\'s Sales</div><div class="metric-value">'+PKR(todaySales)+'</div><div class="metric-sub" style="color:#188038;">Active today</div></div>'
+      +'<div class="metric-card"><div class="metric-label">Total Revenue</div><div class="metric-value">'+PKR(totalSales)+'</div><div class="metric-sub">'+STATE.sales.length+' orders</div></div>'
+      +'<div class="metric-card"><div class="metric-label">Total Expenses</div><div class="metric-value" style="color:#c5221f;">'+PKR(totalExp)+'</div><div class="metric-sub">'+STATE.expenses.length+' entries</div></div>'
+      +'<div class="metric-card"><div class="metric-label">Net Profit</div><div class="metric-value" style="color:'+(profit>=0?'#188038':'#c5221f')+';">'+PKR(profit)+'</div><div class="metric-sub">Revenue − Expenses</div></div>'
+    +'</div>'
+    +'<div class="grid-2">'
+      +'<div>'
+        +'<div class="card">'
+          +'<div class="card-header"><span class="card-title">Recent Sales</span><button class="btn btn-sm" id="dash-view-sales">View all</button></div>'
+          +'<table><thead><tr><th>Date</th><th>Item</th>'+(currentUser.isOwner?'<th>Trader</th>':'')+'<th>Total</th><th>Status</th></tr></thead>'
+          +'<tbody>'+salesRows+'</tbody></table>'
+        +'</div>'
+        +'<div class="card">'
+          +'<div class="card-header"><span class="card-title">Inventory Status</span><button class="btn btn-sm" id="dash-view-inv">Manage</button></div>'
+          +'<div style="display:flex;gap:10px;margin-bottom:12px;">'
+            +'<div class="metric-card" style="flex:1;padding:10px;"><div class="metric-label">Total Bags</div><div class="metric-value" style="font-size:18px;">'+totalInvQty.toLocaleString()+'</div></div>'
+            +'<div class="metric-card" style="flex:1;padding:10px;background:'+(lowStock>0?'#fef7e0':'#fff')+';"><div class="metric-label">Low Stock</div><div class="metric-value" style="font-size:18px;color:'+(lowStock>0?'#b06000':'#1a1a1a')+';">'+lowStock+'</div></div>'
+          +'</div>'
+          +invRows
+        +'</div>'
+      +'</div>'
+      +'<div>'
+        +(currentUser.isOwner&&STATE.traders.length?'<div class="card"><div class="card-header"><span class="card-title">Trader Performance</span></div>'+traderHtml+'</div>':'')
+        +'<div class="card"><div class="card-header"><span class="card-title">Expenses by Category</span></div>'+expCatHtml+'</div>'
+      +'</div>'
+    +'</div>';
+
+  document.getElementById('dash-view-sales').addEventListener('click', function(){ showPage('sales'); });
+  document.getElementById('dash-view-inv').addEventListener('click',   function(){ showPage('inventory'); });
+};
+
+/* ══════════════════════════════════════════════════════════════
+   DAILY SALES
+══════════════════════════════════════════════════════════════ */
+PAGE_RENDERERS.sales = function(){
+  var sales = currentUser.isOwner ? STATE.sales : STATE.sales.filter(function(s){ return s.traderName===currentUser.name; });
+  var mc = document.getElementById('main-content');
+
+  mc.innerHTML =
+    '<div style="display:flex;justify-content:flex-end;margin-bottom:14px;">'
+      +'<button class="btn btn-primary" id="add-sale-btn"><i class="ti ti-plus"></i>Record Sale</button>'
+    +'</div>'
+    +'<div class="card" style="margin-bottom:0;">'
+      +'<div class="card-header"><span class="card-title">Sales Record</span><span style="font-size:12px;color:#999;">'+sales.length+' entries</span></div>'
+      +'<div style="overflow-x:auto;">'
+        +'<table><thead><tr>'
+          +'<th>Date</th><th>Buyer</th><th>Item</th><th>Qty</th><th>Unit Price</th><th>Total</th>'
+          +(currentUser.isOwner?'<th>Trader</th>':'')
+          +'<th>Status</th>'
+          +(currentUser.isOwner?'<th></th>':'')
+        +'</tr></thead>'
+        +'<tbody id="sales-tbody"></tbody></table>'
+      +'</div>'
+    +'</div>';
+
+  document.getElementById('add-sale-btn').addEventListener('click', openAddSale);
+
+  var tbody = document.getElementById('sales-tbody');
+  if(sales.length){
+    sales.forEach(function(s){
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td style="color:#999;font-size:11px;">'+s.date+'</td>'
+        +'<td style="font-weight:500;">'+s.buyer+'</td>'
+        +'<td>'+s.item+'</td>'
+        +'<td>'+s.qty+'</td>'
+        +'<td>'+PKR(s.unitPrice)+'</td>'
+        +'<td style="font-weight:600;">'+PKR(s.total)+'</td>'
+        +(currentUser.isOwner?'<td><span class="badge badge-blue">'+s.traderName+'</span></td>':'')
+        +'<td><span class="badge '+(s.status==='paid'?'badge-green':'badge-amber')+'">'+s.status+'</span></td>'
+        +(currentUser.isOwner?'<td><button class="btn btn-sm btn-danger del-sale-btn"><i class="ti ti-trash"></i></button></td>':'');
+      if(currentUser.isOwner){
+        var btn = tr.querySelector('.del-sale-btn');
+        (function(saleId){
+          btn.addEventListener('click', function(){ deleteSale(saleId); });
+        })(s.id);
+      }
+      tbody.appendChild(tr);
+    });
+  } else {
+    var cols = currentUser.isOwner ? 9 : 7;
+    tbody.innerHTML = '<tr><td colspan="'+cols+'"><div class="empty-state"><i class="ti ti-receipt-off"></i><p>No sales recorded yet</p></div></td></tr>';
+  }
+};
+
+function openAddSale(){
+  var traderOpts = '';
+  if(currentUser.isOwner){
+    STATE.traders.forEach(function(t){ traderOpts += '<option value="'+t.id+'">'+t.name+'</option>'; });
+  } else {
+    var me = STATE.traders.find(function(t){ return t.name===currentUser.name; });
+    traderOpts = '<option value="'+(me?me.id:'')+'">'+currentUser.name+'</option>';
+  }
+  var itemOpts = STATE.inventory.map(function(i){
+    return '<option value="'+i.id+'">'+i.name+' ('+i.qty+' in stock)</option>';
+  }).join('');
+
+  openModal(
+    '<div class="modal-title">Record New Sale</div>'
+    +'<div class="grid-2">'
+      +'<div class="form-group"><label class="form-label">Date</label><input class="form-input" type="date" id="s-date" value="'+today()+'"></div>'
+      +'<div class="form-group"><label class="form-label">Trader</label><select class="form-input" id="s-trader">'+traderOpts+'</select></div>'
+    +'</div>'
+    +'<div class="form-group"><label class="form-label">Buyer Name</label><input class="form-input" type="text" id="s-buyer" placeholder="Customer or company name"></div>'
+    +'<div class="form-group"><label class="form-label">Rice Product</label><select class="form-input" id="s-item">'+itemOpts+'</select></div>'
+    +'<div class="grid-2">'
+      +'<div class="form-group"><label class="form-label">Quantity (bags)</label><input class="form-input" type="number" id="s-qty" value="1" min="1"></div>'
+      +'<div class="form-group"><label class="form-label">Unit Price (₨)</label><input class="form-input" type="number" id="s-price" placeholder="Enter price"></div>'
+    +'</div>'
+    +'<div class="form-group"><label class="form-label">Total Amount</label><input class="form-input" type="text" id="s-total" readonly style="font-weight:600;background:#f5f5f5;"></div>'
+    +'<div class="form-group"><label class="form-label">Payment Status</label><select class="form-input" id="s-status"><option value="paid">Paid</option><option value="pending">Pending</option></select></div>'
+    +'<div class="modal-footer"><button class="btn" id="ms-cancel">Cancel</button><button class="btn btn-primary" id="ms-save">Save Sale</button></div>'
+  );
+  document.getElementById('ms-cancel').addEventListener('click', closeModal);
+  document.getElementById('ms-save').addEventListener('click', saveSale);
+  document.getElementById('s-qty').addEventListener('input', calcSaleTotal);
+  document.getElementById('s-price').addEventListener('input', calcSaleTotal);
 }
 
-if(page==="sales"){
-html+=`<div class="card">Sales Module</div>`;
+function calcSaleTotal(){
+  var qty   = parseFloat(document.getElementById('s-qty').value)||0;
+  var price = parseFloat(document.getElementById('s-price').value)||0;
+  document.getElementById('s-total').value = PKR(qty*price);
 }
 
-if(page==="expenses"){
-html+=`<div class="card">Expenses Module</div>`;
+function saveSale(){
+  var itemId   = parseInt(document.getElementById('s-item').value);
+  var traderId = parseInt(document.getElementById('s-trader').value);
+  var item     = STATE.inventory.find(function(i){ return i.id===itemId; });
+  var trader   = STATE.traders.find(function(t){ return t.id===traderId; });
+  var qty      = parseInt(document.getElementById('s-qty').value)||0;
+  var price    = parseFloat(document.getElementById('s-price').value)||0;
+  var buyer    = document.getElementById('s-buyer').value.trim();
+  if(!buyer)              return alert('Enter buyer name');
+  if(qty<=0)              return alert('Enter a valid quantity');
+  if(!price||price<=0)    return alert('Enter a unit price');
+  if(item && qty>item.qty) return alert('Not enough stock! Only '+item.qty+' bags available.');
+
+  STATE.sales.unshift({
+    id: Date.now(),
+    date: document.getElementById('s-date').value,
+    traderId: traderId,
+    traderName: trader ? trader.name : currentUser.name,
+    item: item ? item.name : '',
+    itemId: itemId,
+    qty: qty,
+    unitPrice: price,
+    total: qty*price,
+    buyer: buyer,
+    status: document.getElementById('s-status').value
+  });
+  if(item){ item.qty -= qty; }
+  saveState();
+  closeModal();
+  PAGE_RENDERERS.sales();
+  showToast('Sale recorded!');
 }
 
-if(page==="transfer"){
-html+=`<div class="card">Transfers Module</div>`;
+function deleteSale(id){
+  if(!confirmDlg('Delete this sale record?')) return;
+  var s = STATE.sales.find(function(x){ return x.id===id; });
+  if(s){
+    var item = STATE.inventory.find(function(i){ return i.id===s.itemId; });
+    if(item) item.qty += s.qty;
+  }
+  STATE.sales = STATE.sales.filter(function(x){ return x.id!==id; });
+  saveState();
+  PAGE_RENDERERS.sales();
+  showToast('Sale deleted.');
 }
 
-document.getElementById("content").innerHTML=html;
+/* ══════════════════════════════════════════════════════════════
+   INVENTORY
+══════════════════════════════════════════════════════════════ */
+PAGE_RENDERERS.inventory = function(){
+  var mc = document.getElementById('main-content');
+  mc.innerHTML =
+    (currentUser.isOwner?'<div style="display:flex;justify-content:flex-end;margin-bottom:14px;"><button class="btn btn-primary" id="add-product-btn"><i class="ti ti-plus"></i>Add Product</button></div>':'')
+    +'<div class="card" style="margin-bottom:0;">'
+      +'<div class="card-header"><span class="card-title">Rice Inventory</span></div>'
+      +'<div style="overflow-x:auto;">'
+        +'<table><thead><tr>'
+          +'<th>Product</th><th>Variety</th><th>Size</th><th>In Stock</th><th>Avg Buy Price</th><th>Status</th>'
+          +(currentUser.isOwner?'<th></th>':'')
+        +'</tr></thead>'
+        +'<tbody id="inv-tbody"></tbody></table>'
+      +'</div>'
+    +'</div>';
+
+  if(currentUser.isOwner){
+    document.getElementById('add-product-btn').addEventListener('click', openAddStock);
+  }
+
+  var tbody = document.getElementById('inv-tbody');
+  STATE.inventory.forEach(function(i){
+    var avg = calcAvgPrice(i);
+    var st  = i.qty<50?['badge-red','Critical']:i.qty<150?['badge-amber','Low']:['badge-green','Good'];
+    var tr  = document.createElement('tr');
+    tr.innerHTML =
+      '<td style="font-weight:500;">'+i.name+'</td>'
+      +'<td><span class="badge badge-blue">'+i.variety+'</span></td>'
+      +'<td>'+i.size+'</td>'
+      +'<td style="font-weight:600;">'+i.qty.toLocaleString()+'</td>'
+      +'<td>'+PKR(avg)+'</td>'
+      +'<td><span class="badge '+st[0]+'">'+st[1]+'</span></td>'
+      +(currentUser.isOwner
+        ?'<td style="display:flex;gap:4px;">'
+          +'<button class="btn btn-sm restock-btn"><i class="ti ti-plus"></i>Restock</button>'
+          +'<button class="btn btn-sm btn-danger del-prod-btn"><i class="ti ti-trash"></i></button>'
+        +'</td>'
+        :'');
+    if(currentUser.isOwner){
+      (function(itemId){
+        tr.querySelector('.restock-btn').addEventListener('click', function(){ openRestockItem(itemId); });
+        tr.querySelector('.del-prod-btn').addEventListener('click', function(){ deleteProduct(itemId); });
+      })(i.id);
+    }
+    tbody.appendChild(tr);
+  });
+};
+
+function openAddStock(){
+  openModal(
+    '<div class="modal-title">Add New Product</div>'
+    +'<div class="form-group"><label class="form-label">Product Name</label><input class="form-input" type="text" id="inv-name" placeholder="e.g. Basmati Long Grain (50kg)"></div>'
+    +'<div class="grid-2">'
+      +'<div class="form-group"><label class="form-label">Variety</label><select class="form-input" id="inv-var"><option>Basmati</option><option>Jasmine</option><option>Irri-6</option><option>Super Kernel</option><option>Other</option></select></div>'
+      +'<div class="form-group"><label class="form-label">Bag Size</label><select class="form-input" id="inv-size"><option>5kg</option><option>10kg</option><option>25kg</option><option>50kg</option></select></div>'
+    +'</div>'
+    +'<div class="grid-2">'
+      +'<div class="form-group"><label class="form-label">Initial Qty (bags)</label><input class="form-input" type="number" id="inv-qty" value="0" min="0"></div>'
+      +'<div class="form-group"><label class="form-label">Buy Price (₨/bag)</label><input class="form-input" type="number" id="inv-buy" value="0"></div>'
+    +'</div>'
+    +'<div class="form-group"><label class="form-label">SKU / Code</label><input class="form-input" type="text" id="inv-sku" placeholder="e.g. BAS-50-2"></div>'
+    +'<div class="modal-footer"><button class="btn" id="ap-cancel">Cancel</button><button class="btn btn-primary" id="ap-save">Add Product</button></div>'
+  );
+  document.getElementById('ap-cancel').addEventListener('click', closeModal);
+  document.getElementById('ap-save').addEventListener('click', saveStock);
+}
+
+function saveStock(){
+  var name = document.getElementById('inv-name').value.trim();
+  if(!name) return alert('Enter product name');
+  var qty      = parseInt(document.getElementById('inv-qty').value)||0;
+  var buyPrice = parseInt(document.getElementById('inv-buy').value)||0;
+  STATE.inventory.push({
+    id: Date.now(),
+    name: name,
+    sku: document.getElementById('inv-sku').value,
+    qty: qty,
+    buyPrice: buyPrice,
+    totalCost: qty * buyPrice,
+    sellPrice: 0,
+    variety: document.getElementById('inv-var').value,
+    size: document.getElementById('inv-size').value
+  });
+  saveState();
+  closeModal();
+  PAGE_RENDERERS.inventory();
+  showToast('Product added!');
+}
+
+function openRestockItem(id){
+  var item = STATE.inventory.find(function(i){ return i.id===id; });
+  if(!item) return;
+  var avg = calcAvgPrice(item);
+  openModal(
+    '<div class="modal-title">Restock — '+item.name+'</div>'
+    +'<div class="metric-card" style="margin-bottom:14px;">'
+      +'<div class="metric-label">Current Stock</div>'
+      +'<div class="metric-value">'+item.qty+' bags</div>'
+      +'<div style="font-size:12px;color:#999;margin-top:4px;">Avg buy price: '+PKR(avg)+'</div>'
+    +'</div>'
+    +'<div class="form-group"><label class="form-label">Bags to Add</label><input class="form-input" type="number" id="restock-qty" value="50" min="1"></div>'
+    +'<div class="form-group"><label class="form-label">New Batch Buy Price (₨/bag)</label><input class="form-input" type="number" id="restock-price" value="'+item.buyPrice+'"></div>'
+    +'<div style="background:#f0f4ff;padding:10px;border-radius:8px;font-size:12px;color:#555;margin-bottom:14px;">Avg price updates automatically using weighted average of existing + new stock.</div>'
+    +'<div class="modal-footer"><button class="btn" id="rs-cancel">Cancel</button><button class="btn btn-primary" id="rs-save">Update Stock</button></div>'
+  );
+  document.getElementById('rs-cancel').addEventListener('click', closeModal);
+  document.getElementById('rs-save').addEventListener('click', function(){ doRestock(id); });
+}
+
+function doRestock(id){
+  var item       = STATE.inventory.find(function(i){ return i.id===id; });
+  if(!item) return;
+  var addQty     = parseInt(document.getElementById('restock-qty').value)||0;
+  var newPrice   = parseInt(document.getElementById('restock-price').value)||0;
+  if(addQty<=0)    return alert('Enter a valid quantity');
+  if(newPrice<=0)  return alert('Enter a valid price');
+  // Weighted average: (existingTotalCost + newBatchCost) / totalQty
+  var newCost    = addQty * newPrice;
+  item.totalCost = (item.totalCost||0) + newCost;
+  item.qty       += addQty;
+  item.buyPrice   = calcAvgPrice(item); // store latest avg for reference
+  saveState();
+  closeModal();
+  PAGE_RENDERERS.inventory();
+  showToast('Stock updated! New avg price: '+PKR(item.buyPrice));
+}
+
+function deleteProduct(id){
+  if(!confirmDlg('Remove this product from inventory?')) return;
+  STATE.inventory = STATE.inventory.filter(function(i){ return i.id!==id; });
+  saveState();
+  PAGE_RENDERERS.inventory();
+  showToast('Product removed.');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   EXPENSES
+══════════════════════════════════════════════════════════════ */
+PAGE_RENDERERS.expenses = function(){
+  var expenses = currentUser.isOwner ? STATE.expenses : STATE.expenses.filter(function(e){ return e.traderName===currentUser.name; });
+  var total    = expenses.reduce(function(a,e){ return a+e.amount; }, 0);
+
+  var catCards = ['Fuel','Transport','Labour'].map(function(cat){
+    var amt = expenses.filter(function(e){ return e.category===cat; }).reduce(function(a,e){ return a+e.amount; },0);
+    return '<div class="metric-card" style="padding:10px;"><div class="metric-label">'+cat+'</div><div class="metric-value" style="font-size:16px;">'+PKR(amt)+'</div></div>';
+  }).join('');
+
+  var mc = document.getElementById('main-content');
+  mc.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px;flex-wrap:wrap;">'
+      +'<div class="grid-3" style="gap:8px;flex:1;min-width:0;">'+catCards+'</div>'
+      +'<button class="btn btn-primary" id="add-exp-btn"><i class="ti ti-plus"></i>Add Expense</button>'
+    +'</div>'
+    +'<div class="card" style="margin-bottom:0;">'
+      +'<div class="card-header"><span class="card-title">Expense Log</span><span style="font-weight:600;color:#c5221f;">'+PKR(total)+' total</span></div>'
+      +'<div style="overflow-x:auto;">'
+        +'<table><thead><tr>'
+          +'<th>Date</th><th>Category</th><th>Description</th><th>Amount</th>'
+          +(currentUser.isOwner?'<th>Trader</th>':'')
+          +'<th>Receipt</th>'
+          +(currentUser.isOwner?'<th></th>':'')
+        +'</tr></thead>'
+        +'<tbody id="exp-tbody"></tbody></table>'
+      +'</div>'
+    +'</div>';
+
+  document.getElementById('add-exp-btn').addEventListener('click', openAddExpense);
+
+  var tbody = document.getElementById('exp-tbody');
+  if(expenses.length){
+    expenses.forEach(function(e){
+      var catColor = e.category==='Fuel'?'badge-amber':e.category==='Transport'?'badge-blue':e.category==='Labour'?'badge-green':'badge-gray';
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td style="color:#999;font-size:11px;">'+e.date+'</td>'
+        +'<td><span class="badge '+catColor+'">'+e.category+'</span></td>'
+        +'<td>'+e.description+'</td>'
+        +'<td style="font-weight:600;color:#c5221f;">'+PKR(e.amount)+'</td>'
+        +(currentUser.isOwner?'<td>'+e.traderName+'</td>':'')
+        +'<td style="font-size:11px;color:#999;">'+e.receipt+'</td>'
+        +(currentUser.isOwner?'<td><button class="btn btn-sm btn-danger del-exp-btn"><i class="ti ti-trash"></i></button></td>':'');
+      if(currentUser.isOwner){
+        (function(expId){
+          tr.querySelector('.del-exp-btn').addEventListener('click', function(){ deleteExpense(expId); });
+        })(e.id);
+      }
+      tbody.appendChild(tr);
+    });
+  } else {
+    var cols = currentUser.isOwner ? 7 : 5;
+    tbody.innerHTML = '<tr><td colspan="'+cols+'"><div class="empty-state"><i class="ti ti-cash-off"></i><p>No expenses recorded</p></div></td></tr>';
+  }
+};
+
+function openAddExpense(){
+  var traderOpts = '';
+  if(currentUser.isOwner){
+    traderOpts = '<option value="">Owner (General)</option>';
+    STATE.traders.forEach(function(t){ traderOpts += '<option value="'+t.id+'">'+t.name+'</option>'; });
+  } else {
+    var me = STATE.traders.find(function(t){ return t.name===currentUser.name; });
+    traderOpts = '<option value="'+(me?me.id:'')+'">'+currentUser.name+'</option>';
+  }
+  openModal(
+    '<div class="modal-title">Add Expense</div>'
+    +'<div class="grid-2">'
+      +'<div class="form-group"><label class="form-label">Date</label><input class="form-input" type="date" id="ex-date" value="'+today()+'"></div>'
+      +'<div class="form-group"><label class="form-label">Category</label><select class="form-input" id="ex-cat"><option>Fuel</option><option>Transport</option><option>Labour</option><option>Other</option></select></div>'
+    +'</div>'
+    +'<div class="form-group"><label class="form-label">Description</label><input class="form-input" type="text" id="ex-desc" placeholder="Details about this expense"></div>'
+    +'<div class="grid-2">'
+      +'<div class="form-group"><label class="form-label">Amount (₨)</label><input class="form-input" type="number" id="ex-amt" placeholder="0"></div>'
+      +'<div class="form-group"><label class="form-label">Trader</label><select class="form-input" id="ex-trader">'+traderOpts+'</select></div>'
+    +'</div>'
+    +'<div class="modal-footer"><button class="btn" id="ae-cancel">Cancel</button><button class="btn btn-primary" id="ae-save">Save Expense</button></div>'
+  );
+  document.getElementById('ae-cancel').addEventListener('click', closeModal);
+  document.getElementById('ae-save').addEventListener('click', saveExpense);
+}
+
+function saveExpense(){
+  var desc = document.getElementById('ex-desc').value.trim();
+  var amt  = parseFloat(document.getElementById('ex-amt').value)||0;
+  if(!desc) return alert('Enter a description');
+  if(!amt)  return alert('Enter an amount');
+  var traderVal = document.getElementById('ex-trader').value;
+  var traderId  = traderVal ? parseInt(traderVal) : null;
+  var trader    = traderId ? STATE.traders.find(function(t){ return t.id===traderId; }) : null;
+  STATE.expenses.unshift({
+    id: Date.now(),
+    date: document.getElementById('ex-date').value,
+    category: document.getElementById('ex-cat').value,
+    amount: amt,
+    description: desc,
+    traderId: traderId,
+    traderName: trader ? trader.name : (currentUser.isOwner ? 'Owner' : currentUser.name),
+    receipt: 'EXP-'+String(STATE.expenses.length+1).padStart(3,'0')
+  });
+  saveState();
+  closeModal();
+  PAGE_RENDERERS.expenses();
+  showToast('Expense saved!');
+}
+
+function deleteExpense(id){
+  if(!confirmDlg('Delete this expense?')) return;
+  STATE.expenses = STATE.expenses.filter(function(e){ return e.id!==id; });
+  saveState();
+  PAGE_RENDERERS.expenses();
+  showToast('Expense deleted.');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TRADERS
+══════════════════════════════════════════════════════════════ */
+PAGE_RENDERERS.traders = function(){
+  var mc = document.getElementById('main-content');
+  var cards = '';
+  if(STATE.traders.length){
+    cards = STATE.traders.map(function(t){
+      var ts   = STATE.sales.filter(function(s){ return s.traderId===t.id; }).reduce(function(a,s){ return a+s.total; },0);
+      var te   = STATE.expenses.filter(function(e){ return e.traderId===t.id; }).reduce(function(a,e){ return a+e.amount; },0);
+      var txns = STATE.sales.filter(function(s){ return s.traderId===t.id; }).length;
+      var ini  = t.name.split(' ').map(function(x){ return x[0]; }).join('');
+      return '<div class="card" style="margin-bottom:0;">'
+        +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">'
+          +'<div class="trader-avatar" style="width:42px;height:42px;font-size:14px;">'+ini+'</div>'
+          +'<div><div style="font-weight:600;">'+t.name+'</div><div style="font-size:11px;color:#999;">'+(t.area||'—')+' · '+(t.phone||'—')+'</div></div>'
+        +'</div>'
+        +'<div class="stat-row"><span style="font-size:12px;color:#999;">Total Sales</span><span style="font-weight:600;color:#188038;">'+PKR(ts)+'</span></div>'
+        +'<div class="stat-row"><span style="font-size:12px;color:#999;">Expenses</span><span style="font-weight:600;color:#c5221f;">'+PKR(te)+'</span></div>'
+        +'<div class="stat-row"><span style="font-size:12px;color:#999;">Transactions</span><span style="font-weight:600;">'+txns+'</span></div>'
+        +'<div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;">'
+          +'<span class="badge badge-green">'+t.status+'</span>'
+          +'<span style="font-size:11px;color:#999;">Since '+t.joinDate+'</span>'
+        +'</div></div>';
+    }).join('');
+  } else {
+    cards = '<div style="grid-column:1/-1;"><div class="empty-state"><i class="ti ti-users"></i><p>No traders. Add them in Settings.</p></div></div>';
+  }
+  mc.innerHTML =
+    '<div style="display:flex;justify-content:flex-end;margin-bottom:14px;">'
+      +'<button class="btn btn-primary" id="go-settings-btn"><i class="ti ti-settings"></i>Manage in Settings</button>'
+    +'</div>'
+    +'<div class="grid-3">'+cards+'</div>';
+  document.getElementById('go-settings-btn').addEventListener('click', function(){ showPage('settings'); });
+};
+
+/* ══════════════════════════════════════════════════════════════
+   REPORTS
+══════════════════════════════════════════════════════════════ */
+PAGE_RENDERERS.reports = function(){
+  var totalSales = STATE.sales.reduce(function(a,s){ return a+s.total; },0);
+  var totalExp   = STATE.expenses.reduce(function(a,e){ return a+e.amount; },0);
+  var byTrader   = STATE.traders.map(function(t){
+    return {
+      name:  t.name,
+      sales: STATE.sales.filter(function(s){ return s.traderId===t.id; }).reduce(function(a,s){ return a+s.total; },0),
+      txns:  STATE.sales.filter(function(s){ return s.traderId===t.id; }).length,
+      exp:   STATE.expenses.filter(function(e){ return e.traderId===t.id; }).reduce(function(a,e){ return a+e.amount; },0)
+    };
+  }).sort(function(a,b){ return b.sales-a.sales; });
+
+  var lbRows = byTrader.length ? byTrader.map(function(t,i){
+    return '<tr><td style="color:#999;font-weight:600;">'+(i+1)+'</td><td>'+t.name+'</td>'
+      +'<td style="color:#188038;font-weight:600;">'+PKR(t.sales)+'</td>'
+      +'<td>'+t.txns+'</td>'
+      +'<td style="font-weight:600;">'+PKR(t.sales-t.exp)+'</td></tr>';
+  }).join('') : '<tr><td colspan="5"><div class="empty-state" style="padding:20px;"><p>No trader data yet</p></div></td></tr>';
+
+  var topProds = STATE.inventory.map(function(i){
+    return {
+      name: i.name,
+      sold: STATE.sales.filter(function(s){ return s.itemId===i.id; }).reduce(function(a,s){ return a+s.qty; },0),
+      rev:  STATE.sales.filter(function(s){ return s.itemId===i.id; }).reduce(function(a,s){ return a+s.total; },0)
+    };
+  }).sort(function(a,b){ return b.rev-a.rev; }).slice(0,5).map(function(p){
+    return '<div class="stat-row"><div><div style="font-size:13px;">'+p.name+'</div><div style="font-size:11px;color:#999;">'+p.sold+' bags sold</div></div><span style="font-weight:600;">'+PKR(p.rev)+'</span></div>';
+  }).join('');
+
+  var expBreak = ['Fuel','Transport','Labour','Other'].map(function(cat){
+    var amt = STATE.expenses.filter(function(e){ return e.category===cat; }).reduce(function(a,e){ return a+e.amount; },0);
+    var pct = totalExp>0?Math.round(amt/totalExp*100):0;
+    return '<div style="text-align:center;padding:12px;">'
+      +'<div style="font-size:26px;font-weight:700;color:#1a73e8;">'+pct+'%</div>'
+      +'<div style="font-size:12px;color:#999;margin:2px 0;">'+cat+'</div>'
+      +'<div style="font-weight:600;">'+PKR(amt)+'</div></div>';
+  }).join('');
+
+  document.getElementById('main-content').innerHTML =
+    '<div class="grid-4">'
+      +'<div class="metric-card"><div class="metric-label">Revenue</div><div class="metric-value">'+PKR(totalSales)+'</div></div>'
+      +'<div class="metric-card"><div class="metric-label">Expenses</div><div class="metric-value" style="color:#c5221f;">'+PKR(totalExp)+'</div></div>'
+      +'<div class="metric-card"><div class="metric-label">Net Profit</div><div class="metric-value" style="color:#188038;">'+PKR(totalSales-totalExp)+'</div></div>'
+      +'<div class="metric-card"><div class="metric-label">Total Orders</div><div class="metric-value">'+STATE.sales.length+'</div></div>'
+    +'</div>'
+    +'<div class="grid-2">'
+      +'<div class="card"><div class="card-header"><span class="card-title">Trader Leaderboard</span></div>'
+        +'<table><thead><tr><th>#</th><th>Trader</th><th>Sales</th><th>Txns</th><th>Net</th></tr></thead>'
+        +'<tbody>'+lbRows+'</tbody></table></div>'
+      +'<div class="card"><div class="card-header"><span class="card-title">Top Products</span></div>'+topProds+'</div>'
+    +'</div>'
+    +'<div class="card"><div class="card-header"><span class="card-title">Expense Breakdown</span></div>'
+      +'<div class="grid-4">'+expBreak+'</div>'
+    +'</div>';
+};
+
+/* ══════════════════════════════════════════════════════════════
+   SETTINGS
+══════════════════════════════════════════════════════════════ */
+PAGE_RENDERERS.settings = function(){
+  var bizName  = STATE.bizName||'RiceTrade Pro';
+  var userRows = Object.keys(STATE.users).map(function(uname){
+    var u = STATE.users[uname];
+    return '<div class="trader-row">'
+      +'<div style="display:flex;align-items:center;gap:10px;">'
+        +'<div class="trader-avatar" style="width:34px;height:34px;font-size:11px;'+(u.isOwner?'background:#e8f0fe;color:#1a73e8;':'background:#e6f4ea;color:#188038;')+'">'+u.initials+'</div>'
+        +'<div><div style="font-weight:500;font-size:13px;">'+u.name+'</div>'
+        +'<div style="font-size:11px;color:#999;">@'+uname+' · '+(u.isOwner?'Owner':'Trader')+'</div></div>'
+      +'</div>'
+      +'<button class="btn btn-sm btn-warning chg-pass-btn" data-uname="'+uname+'"><i class="ti ti-key"></i>Change Password</button>'
+    +'</div>';
+  }).join('');
+
+  document.getElementById('main-content').innerHTML =
+    '<div class="settings-section">'
+      +'<div class="settings-section-title"><i class="ti ti-building-store"></i>Business Details</div>'
+      +'<div class="form-group"><label class="form-label">Business Name</label>'
+        +'<div style="display:flex;gap:8px;">'
+          +'<input class="form-input" type="text" id="set-bizname" value="'+bizName+'" placeholder="Your business name">'
+          +'<button class="btn btn-primary" id="save-biz-btn">Save</button>'
+        +'</div>'
+      +'</div>'
+    +'</div>'
+
+    +'<div class="settings-section">'
+      +'<div class="settings-section-title"><i class="ti ti-key"></i>Change Passwords</div>'
+      +'<p style="font-size:12px;color:#999;margin-bottom:12px;">Change any user\'s login password without re-uploading files.</p>'
+      +userRows
+    +'</div>'
+
+    +'<div class="settings-section">'
+      +'<div class="settings-section-title"><i class="ti ti-user-plus"></i>Add New Trader Account</div>'
+      +'<div class="grid-2">'
+        +'<div class="form-group"><label class="form-label">Full Name</label><input class="form-input" type="text" id="set-tr-name" placeholder="Trader\'s full name"></div>'
+        +'<div class="form-group"><label class="form-label">Username</label><input class="form-input" type="text" id="set-tr-user" placeholder="e.g. trader4"></div>'
+      +'</div>'
+      +'<div class="grid-2">'
+        +'<div class="form-group"><label class="form-label">Phone</label><input class="form-input" type="text" id="set-tr-phone" placeholder="03xx-xxxxxxx"></div>'
+        +'<div class="form-group"><label class="form-label">Area / City</label><input class="form-input" type="text" id="set-tr-area" placeholder="e.g. Multan"></div>'
+      +'</div>'
+      +'<div class="form-group"><label class="form-label">Password</label><input class="form-input" type="text" id="set-tr-pass" value="1234"></div>'
+      +'<button class="btn btn-primary" id="add-trader-btn"><i class="ti ti-user-plus"></i>Add Trader</button>'
+    +'</div>'
+
+    +'<div class="danger-zone">'
+      +'<div class="danger-zone-title"><i class="ti ti-alert-triangle"></i>Danger Zone</div>'
+      +'<div class="stat-row"><div><div style="font-weight:500;font-size:13px;">Clear all sales data</div><div style="font-size:11px;color:#999;">Removes all recorded sales</div></div>'
+        +'<button class="btn btn-sm btn-danger" data-clear="sales"><i class="ti ti-trash"></i>Clear Sales</button></div>'
+      +'<div class="stat-row"><div><div style="font-weight:500;font-size:13px;">Clear all expenses</div><div style="font-size:11px;color:#999;">Removes all expense records</div></div>'
+        +'<button class="btn btn-sm btn-danger" data-clear="expenses"><i class="ti ti-trash"></i>Clear Expenses</button></div>'
+      +'<div class="stat-row"><div><div style="font-weight:500;font-size:13px;">Reset inventory quantities</div><div style="font-size:11px;color:#999;">Sets all stock counts to zero</div></div>'
+        +'<button class="btn btn-sm btn-danger" data-clear="inventory"><i class="ti ti-refresh"></i>Reset Stock</button></div>'
+      +'<div class="stat-row" style="border-bottom:none;"><div><div style="font-weight:500;font-size:13px;">Factory reset — clear everything</div><div style="font-size:11px;color:#999;">Wipes ALL data and starts fresh</div></div>'
+        +'<button class="btn btn-sm btn-danger" data-clear="all"><i class="ti ti-nuclear"></i>Reset All</button></div>'
+    +'</div>';
+
+  // Wire all settings buttons
+  document.getElementById('save-biz-btn').addEventListener('click', saveBizName);
+  document.getElementById('add-trader-btn').addEventListener('click', settingsAddTrader);
+
+  document.querySelectorAll('.chg-pass-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){ openChangePassword(this.getAttribute('data-uname')); });
+  });
+
+  document.querySelectorAll('[data-clear]').forEach(function(btn){
+    btn.addEventListener('click', function(){ clearData(this.getAttribute('data-clear')); });
+  });
+};
+
+function saveBizName(){
+  var n = document.getElementById('set-bizname').value.trim();
+  if(!n) return alert('Enter a business name');
+  STATE.bizName = n;
+  saveState();
+  document.getElementById('sidebar-biz-name').textContent = n;
+  document.getElementById('login-biz-name').textContent   = n;
+  showToast('Business name updated!');
+}
+
+function openChangePassword(username){
+  var u = STATE.users[username];
+  if(!u) return;
+  openModal(
+    '<div class="modal-title">Change Password — '+u.name+'</div>'
+    +'<div style="background:#f0f4ff;padding:10px;border-radius:8px;font-size:12px;color:#555;margin-bottom:14px;">Username: <strong>'+username+'</strong></div>'
+    +'<div class="form-group"><label class="form-label">New Password</label><input class="form-input" type="text" id="new-pass" placeholder="Enter new password"></div>'
+    +'<div class="form-group"><label class="form-label">Confirm Password</label><input class="form-input" type="text" id="confirm-pass" placeholder="Repeat new password"></div>'
+    +'<div class="modal-footer"><button class="btn" id="cp-cancel">Cancel</button><button class="btn btn-primary" id="cp-save">Save Password</button></div>'
+  );
+  document.getElementById('cp-cancel').addEventListener('click', closeModal);
+  document.getElementById('cp-save').addEventListener('click', function(){ savePassword(username); });
+}
+
+function savePassword(username){
+  var np = document.getElementById('new-pass').value;
+  var cp = document.getElementById('confirm-pass').value;
+  if(!np)       return alert('Enter a new password');
+  if(np !== cp) return alert('Passwords do not match!');
+  STATE.users[username].password = np;
+  saveState();
+  closeModal();
+  showToast('Password changed!');
+}
+
+function settingsAddTrader(){
+  var name  = document.getElementById('set-tr-name').value.trim();
+  var uname = document.getElementById('set-tr-user').value.trim().toLowerCase();
+  var pass  = document.getElementById('set-tr-pass').value.trim();
+  if(!name)  return alert('Enter trader name');
+  if(!uname) return alert('Enter a username');
+  if(!pass)  return alert('Enter a password');
+  if(STATE.users[uname]) return alert('Username already exists! Choose another.');
+  STATE.users[uname] = {
+    name: name,
+    role: 'Trader',
+    initials: name.split(' ').map(function(x){ return x[0]; }).join('').toUpperCase().slice(0,2),
+    isOwner: false,
+    password: pass
+  };
+  STATE.traders.push({
+    id: Date.now(),
+    name: name,
+    username: uname,
+    phone: document.getElementById('set-tr-phone').value,
+    area:  document.getElementById('set-tr-area').value,
+    status: 'active',
+    joinDate: today()
+  });
+  saveState();
+  showToast('Trader added!');
+  PAGE_RENDERERS.settings();
+}
+
+function clearData(type){
+  var msgs = {
+    sales:     'Delete ALL sales records? This cannot be undone.',
+    expenses:  'Delete ALL expense records? This cannot be undone.',
+    inventory: 'Reset ALL stock quantities to zero? This cannot be undone.',
+    all:       'WIPE EVERYTHING — all sales, expenses, inventory quantities, and traders? This cannot be undone.'
+  };
+  if(!confirmDlg(msgs[type])) return;
+  if(type==='all' && !confirmDlg('Last warning — are you absolutely sure?')) return;
+
+  if(type==='sales')          STATE.sales = [];
+  else if(type==='expenses')  STATE.expenses = [];
+  else if(type==='inventory') STATE.inventory.forEach(function(i){ i.qty=0; i.totalCost=0; });
+  else if(type==='all'){
+    STATE.sales = [];
+    STATE.expenses = [];
+    STATE.inventory.forEach(function(i){ i.qty=0; i.totalCost=0; });
+    STATE.traders = [];
+    Object.keys(STATE.users).forEach(function(u){ if(!STATE.users[u].isOwner) delete STATE.users[u]; });
+  }
+  saveState();
+  showToast('Done — data cleared.');
+  PAGE_RENDERERS.settings();
 }
 </script>
-
 </body>
 </html>
