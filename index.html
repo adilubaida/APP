@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>RiceTrade Pro</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3b82f6">
+
+<style>
+body{font-family:system-ui;margin:0;background:#0b1220;color:#fff}
+.hidden{display:none}
+.login{height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:20px}
+input,button{padding:12px;margin:6px;width:100%;max-width:320px;border-radius:10px;border:none}
+button{background:#3b82f6;color:#fff;cursor:pointer}
+.app{display:flex;height:100vh}
+.sidebar{width:220px;background:#0f172a;padding:10px}
+.sidebar div{padding:10px;cursor:pointer}
+.sidebar div:hover{background:#1e293b}
+.main{flex:1;padding:15px;overflow:auto}
+.card{background:#111a2e;padding:12px;margin-bottom:10px;border-radius:12px}
+@media(max-width:768px){.sidebar{display:none}}
+</style>
+</head>
+
+<body>
+
+<div id="login" class="login">
+<h2>RiceTrade Pro</h2>
+<input id="user" placeholder="username">
+<input id="pass" type="password" placeholder="password">
+<button onclick="login()">Login</button>
+</div>
+
+<div id="app" class="app hidden">
+
+<div class="sidebar">
+<div onclick="show('dashboard')">Dashboard</div>
+<div onclick="show('inventory')">Inventory</div>
+<div onclick="show('sales')">Sales</div>
+<div onclick="show('expenses')">Expenses</div>
+<div onclick="show('transfer')">Transfers</div>
+<div onclick="logout()">Logout</div>
+</div>
+
+<div class="main">
+<h3 id="title">Dashboard</h3>
+<div id="content"></div>
+</div>
+
+</div>
+
+<script>
+let user=null;
+
+let db={
+users:{owner:{pass:"123",role:"owner"},trader:{pass:"123",role:"trader"}},
+inventory:[{name:"Basmati Rice",qty:100}],
+sales:[],
+expenses:[],
+transfers:[]
+};
+
+function login(){
+let u=document.getElementById("user").value;
+let p=document.getElementById("pass").value;
+
+if(db.users[u] && db.users[u].pass===p){
+user={name:u,role:db.users[u].role};
+document.getElementById("login").classList.add("hidden");
+document.getElementById("app").classList.remove("hidden");
+show("dashboard");
+}else alert("Wrong login");
+}
+
+function logout(){location.reload();}
+
+function show(page){
+document.getElementById("title").innerText=page.toUpperCase();
+let html="";
+
+if(page==="dashboard"){
+html=`<div class="card">Welcome ${user.name} (${user.role})</div>`;
+}
+
+if(page==="inventory"){
+db.inventory.forEach(i=>{
+html+=`<div class="card">${i.name} | ${i.qty}</div>`;
+});
+}
+
+if(page==="sales"){
+html+=`<div class="card">Sales Module</div>`;
+}
+
+if(page==="expenses"){
+html+=`<div class="card">Expenses Module</div>`;
+}
+
+if(page==="transfer"){
+html+=`<div class="card">Transfers Module</div>`;
+}
+
+document.getElementById("content").innerHTML=html;
+}
+</script>
+
+</body>
+</html>
