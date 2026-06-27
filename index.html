@@ -8,6 +8,8 @@
 <link rel="manifest" href="manifest.json">
 <title>RiceTrade Pro</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>  
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;color:#1a1a1a;font-size:14px;}
@@ -184,6 +186,17 @@ select.form-input{cursor:pointer;}
 </div>
 
 <script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCrJHFs8luTgVxDlV-143tAJUN6NqT2MCY",
+  authDomain: "rice-b917e.firebaseapp.com",
+  projectId: "rice-b917e",
+  storageBucket: "rice-b917e.firebasestorage.app",
+  messagingSenderId: "772640090723",
+  appId: "1:772640090723:web:97aa6db6e61f1431b26656",
+  measurementId: "G-2FTERZ52QR"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 /* ── UTILITIES ─────────────────────────────────────────────── */
 const PKR = n => '₨ ' + Number(n||0).toLocaleString('en-PK',{maximumFractionDigits:0});
 const today = () => new Date().toISOString().split('T')[0];
@@ -202,7 +215,7 @@ function confirmDlg(msg){
 
 /* ── STATE ─────────────────────────────────────────────────── */
 var DEFAULT_STATE = {
-  bizName: 'RiceTrade Pro',
+  bizName: 'Ric',
   users: {
     owner:   {name:'Owner',    role:'Administrator', initials:'OW', isOwner:true,  password:'1234'},
     trader1: {name:'Ahmad Khan', role:'Trader',      initials:'AK', isOwner:false, password:'1234'},
@@ -240,18 +253,53 @@ var DEFAULT_STATE = {
 var STATE = {};
 var currentUser = null;
 
-function saveState(){ try{ localStorage.setItem('ricetrade_v3', JSON.stringify(STATE)); }catch(e){} }
-function loadState(){
+/* SAVE TO FIRESTORE (shared cloud data) */
+function saveState(){
   try{
-    var s = localStorage.getItem('ricetrade_v3');
-    if(s){ STATE = JSON.parse(s); }
-    else { STATE = JSON.parse(JSON.stringify(DEFAULT_STATE)); }
+    db.collection("app").doc("ricetrade").set(STATE);
+  }catch(e){
+    console.log("Save failed:", e);
+  }
+}
+
+/* LOAD FROM FIRESTORE */
+async function loadState(){
+  try{
+    const doc = await db.collection("app").doc("ricetrade").get();
+
+    if(doc.exists){
+      STATE = doc.data();
+    } else {
+      STATE = JSON.parse(JSON.stringify(DEFAULT_STATE));
+      saveState();
+    }
+
+    // safety migration (important)
+    STATE.inventory.forEach(function(i){
+      if(!i.totalCost){
+        i.totalCost = (i.buyPrice||0) * (i.qty||0);
+      }
+    });
+
+  }catch(e){
+    console.log("Load failed:", e);
+    STATE = JSON.parse(JSON.stringify(DEFAULT_STATE));
+  }
+}
+
+loadState();
+
     // migrate: ensure every inventory item has totalCost
     STATE.inventory.forEach(function(i){
       if(!i.totalCost) i.totalCost = (i.buyPrice||0) * (i.qty||0);
     });
-  } catch(e){ STATE = JSON.parse(JSON.stringify(DEFAULT_STATE)); }
+
+  } catch(e){
+    STATE = JSON.parse(JSON.stringify(DEFAULT_STATE));
+    console.log("Load failed:", e);
+  }
 }
+
 loadState();
 
 /* ── AVG PRICE HELPER ──────────────────────────────────────── */
