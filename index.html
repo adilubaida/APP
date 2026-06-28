@@ -271,40 +271,50 @@ function saveState(){
 /* ── FIREBASE LOAD — called once on startup ────────────────── */
 function loadState(){
   document.getElementById('loading-screen').style.display = 'flex';
-  document.getElementById('login-screen').style.display   = 'none';
+  document.getElementById('login-screen').style.display = 'none';
 
   DOC_REF.get().then(function(doc){
+
     if(doc.exists){
       STATE = doc.data();
     } else {
-      // First time: seed the database with default data
       STATE = JSON.parse(JSON.stringify(DEFAULT_STATE));
       DOC_REF.set(STATE);
     }
 
-    // Migrate: ensure every inventory item has totalCost
+    // migrate inventory
     STATE.inventory.forEach(function(i){
-      if(!i.totalCost) i.totalCost = (i.buyPrice||0) * (i.qty||0);
-    });
-    // Migrate: stamp COGS onto old sales
-var changed = false;
-
-STATE.sales.forEach(function(sale){
-  if(sale.cogs == null){
-    var inv = STATE.inventory.find(function(i){
-      return i.id === sale.itemId;
+      if(!i.totalCost) {
+        i.totalCost = (i.buyPrice || 0) * (i.qty || 0);
+      }
     });
 
-    var cp = inv ? calcAvgPrice(inv) : 0;
+    // migrate sales COGS
+    var changed = false;
 
-    sale.costPrice = cp;
-    sale.cogs = sale.qty * cp;
-    changed = true;
-  }
-});
+    STATE.sales.forEach(function(sale){
+      if(sale.cogs == null){
+        var inv = STATE.inventory.find(function(i){
+          return i.id === sale.itemId;
+        });
 
-if(changed){
-  saveState();
+        var cp = inv ? calcAvgPrice(inv) : 0;
+
+        sale.costPrice = cp;
+        sale.cogs = sale.qty * cp;
+        changed = true;
+      }
+    });
+
+    if(changed){
+      saveState();
+    }
+
+    document.getElementById('loading-screen').style.display = 'none';
+
+  }).catch(function(err){
+    console.error("Firestore load error:", err);
+  });
 }
 
     // Hide loader, show login
