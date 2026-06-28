@@ -450,7 +450,11 @@ PAGE_RENDERERS.dashboard = function(){
   var totalExp    = STATE.expenses.reduce(function(a,e){ return a+e.amount; },0);
   var totalInvQty = STATE.inventory.reduce(function(a,i){ return a+i.qty; },0);
   var lowStock    = STATE.inventory.filter(function(i){ return i.qty<100; }).length;
-  var profit      = totalSales - totalExp;
+ var totalCOGS = STATE.sales.reduce(function(sum, s){
+  return sum + calcSaleCOGS(s);
+}, 0);
+
+var profit = totalSales - totalCOGS - totalExp;
   var recentSales = (currentUser.isOwner ? STATE.sales : STATE.sales.filter(function(s){ return s.traderName===currentUser.name; })).slice(0,5);
 
   var traderHtml = '';
@@ -482,7 +486,7 @@ PAGE_RENDERERS.dashboard = function(){
   }
 
   var invRows = STATE.inventory.map(function(i){
-    var pct      = Math.min(100, i.qty/20);
+    var pct = Math.min(100, i.qty);
     var barColor = i.qty<100?'#f29900':'#1a73e8';
     return '<div class="stat-row">'
       +'<span style="font-size:12px;">'+i.name+'</span>'
@@ -506,7 +510,7 @@ PAGE_RENDERERS.dashboard = function(){
       +'<div class="metric-card"><div class="metric-label">Today\'s Sales</div><div class="metric-value">'+PKR(todaySales)+'</div><div class="metric-sub" style="color:#188038;">Active today</div></div>'
       +'<div class="metric-card"><div class="metric-label">Total Revenue</div><div class="metric-value">'+PKR(totalSales)+'</div><div class="metric-sub">'+STATE.sales.length+' orders</div></div>'
       +'<div class="metric-card"><div class="metric-label">Total Expenses</div><div class="metric-value" style="color:#c5221f;">'+PKR(totalExp)+'</div><div class="metric-sub">'+STATE.expenses.length+' entries</div></div>'
-      +'<div class="metric-card"><div class="metric-label">Net Profit</div><div class="metric-value" style="color:'+(profit>=0?'#188038':'#c5221f')+';">'+PKR(profit)+'</div><div class="metric-sub">Revenue − Expenses</div></div>'
+      +'<div class="metric-card"><div class="metric-label">Net Profit</div><div class="metric-value" style="color:'+(profit>=0?'#188038':'#c5221f')+';">'+PKR(profit)+'</div><div class="metric-sub">Revenue − COGS - Expenses</div></div>'
     +'</div>'
     +'<div class="grid-2">'
       +'<div>'
@@ -630,12 +634,27 @@ function saveSale(){
   if(qty<=0)            return alert('Enter a valid quantity');
   if(!price||price<=0)  return alert('Enter a unit price');
   if(item&&qty>item.qty) return alert('Not enough stock! Only '+item.qty+' bags available.');
-  STATE.sales.unshift({
-    id:Date.now(), date:document.getElementById('s-date').value,
-    traderId:traderId, traderName:trader?trader.name:currentUser.name,
-    item:item?item.name:'', itemId:itemId, qty:qty, unitPrice:price,
-    total:qty*price, buyer:buyer, status:document.getElementById('s-status').value
-  });
+ // Calculate the current average cost BEFORE reducing stock
+var costPrice = item ? calcAvgPrice(item) : 0;
+
+STATE.sales.unshift({
+  id:Date.now(),
+  date:document.getElementById('s-date').value,
+  traderId:traderId,
+  traderName:trader ? trader.name : currentUser.name,
+  item:item ? item.name : '',
+  itemId:itemId,
+  qty:qty,
+
+  // Stamp the cost information permanently
+  costPrice: costPrice,
+  cogs: qty * costPrice,
+
+  unitPrice:price,
+  total:qty * price,
+  buyer:buyer,
+  status:document.getElementById('s-status').value
+});
   if(item) item.qty -= qty;
   saveState(); closeModal(); PAGE_RENDERERS.sales(); showToast('Sale recorded!');
 }
@@ -865,13 +884,24 @@ PAGE_RENDERERS.traders = function(){
    REPORTS
 ══════════════════════════════════════════════════════════════ */
 PAGE_RENDERERS.reports = function(){
-  var totalSales=STATE.sales.reduce(function(a,s){ return a+s.total; },0);
-  var totalExp=STATE.expenses.reduce(function(a,e){ return a+e.amount; },0);
+  var totalSales = STATE.sales.reduce(function(a,s){ return a + s.total; },0);
+  var totalExp   = STATE.expenses.reduce(function(a,e){ return a + e.amount; },0);
+
+  var totalCOGS = STATE.sales.reduce(function(sum, s){
+    return sum + calcSaleCOGS(s);
+  }, 0);
+
+  var profit = totalSales - totalCOGS - totalExp;
   var byTrader=STATE.traders.map(function(t){
     return {name:t.name,sales:STATE.sales.filter(function(s){ return s.traderId===t.id; }).reduce(function(a,s){ return a+s.total; },0),txns:STATE.sales.filter(function(s){ return s.traderId===t.id; }).length,exp:STATE.expenses.filter(function(e){ return e.traderId===t.id; }).reduce(function(a,e){ return a+e.amount; },0)};
   }).sort(function(a,b){ return b.sales-a.sales; });
   var lbRows=byTrader.length?byTrader.map(function(t,i){
-    return '<tr><td style="color:#999;font-weight:600;">'+(i+1)+'</td><td>'+t.name+'</td><td style="color:#188038;font-weight:600;">'+PKR(t.sales)+'</td><td>'+t.txns+'</td><td style="font-weight:600;">'+PKR(t.sales-t.exp)+'</td></tr>';
+    var cogs = STATE.sales
+  .filter(function(s){ return s.traderId === t.id; })
+  .reduce(function(a,s){ return a + calcSaleCOGS(s); }, 0);
+
+var net = t.sales - cogs - t.exp;
+    return '<tr><td style="color:#999;font-weight:600;">'+(i+1)+'</td><td>'+t.name+'</td><td style="color:#188038;font-weight:600;">'+PKR(t.sales)+'</td><td>'+t.txns+'</td><td style="font-weight:600;">'+PKR(net)+'</td></tr>';
   }).join(''):'<tr><td colspan="5"><div class="empty-state" style="padding:20px;"><p>No trader data yet</p></div></td></tr>';
   var topProds=STATE.inventory.map(function(i){ return {name:i.name,sold:STATE.sales.filter(function(s){ return s.itemId===i.id; }).reduce(function(a,s){ return a+s.qty; },0),rev:STATE.sales.filter(function(s){ return s.itemId===i.id; }).reduce(function(a,s){ return a+s.total; },0)}; }).sort(function(a,b){ return b.rev-a.rev; }).slice(0,5).map(function(p){ return '<div class="stat-row"><div><div style="font-size:13px;">'+p.name+'</div><div style="font-size:11px;color:#999;">'+p.sold+' bags sold</div></div><span style="font-weight:600;">'+PKR(p.rev)+'</span></div>'; }).join('');
   var expBreak=['Fuel','Transport','Labour','Other'].map(function(cat){ var amt=STATE.expenses.filter(function(e){ return e.category===cat; }).reduce(function(a,e){ return a+e.amount; },0); var pct=totalExp>0?Math.round(amt/totalExp*100):0; return '<div style="text-align:center;padding:12px;"><div style="font-size:26px;font-weight:700;color:#1a73e8;">'+pct+'%</div><div style="font-size:12px;color:#999;margin:2px 0;">'+cat+'</div><div style="font-weight:600;">'+PKR(amt)+'</div></div>'; }).join('');
@@ -879,7 +909,7 @@ PAGE_RENDERERS.reports = function(){
     '<div class="grid-4">'
       +'<div class="metric-card"><div class="metric-label">Revenue</div><div class="metric-value">'+PKR(totalSales)+'</div></div>'
       +'<div class="metric-card"><div class="metric-label">Expenses</div><div class="metric-value" style="color:#c5221f;">'+PKR(totalExp)+'</div></div>'
-      +'<div class="metric-card"><div class="metric-label">Net Profit</div><div class="metric-value" style="color:#188038;">'+PKR(totalSales-totalExp)+'</div></div>'
+      +'<div class="metric-card"><div class="metric-label">Net Profit</div><div class="metric-value" style="color:#188038;">'+PKR(profit)+'</div></div>'
       +'<div class="metric-card"><div class="metric-label">Total Orders</div><div class="metric-value">'+STATE.sales.length+'</div></div>'
     +'</div>'
     +'<div class="grid-2">'
