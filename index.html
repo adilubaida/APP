@@ -327,7 +327,20 @@ function calcAvgPrice(item){
   if(!item.qty || item.qty <= 0) return item.buyPrice || 0;
   return Math.round((item.totalCost||0) / item.qty);
 }
+/* ── COGS HELPER ───────────────────────────────────────────── */
+function calcSaleCOGS(sale){
+  // Use the stored COGS if it exists
+  if(sale.cogs != null){
+    return sale.cogs;
+  }
 
+  // Fallback for older records
+  var inv = STATE.inventory.find(function(i){
+    return i.id === sale.itemId;
+  });
+
+  return sale.qty * (inv ? calcAvgPrice(inv) : 0);
+}
 /* ── MODAL ─────────────────────────────────────────────────── */
 function openModal(html){
   document.getElementById('modal-container').innerHTML =
