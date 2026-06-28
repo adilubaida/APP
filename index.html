@@ -8,8 +8,6 @@
 <link rel="manifest" href="manifest.json">
 <title>RiceTrade Pro</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>  
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f5;color:#1a1a1a;font-size:14px;}
@@ -96,6 +94,11 @@ select.form-input{cursor:pointer;}
 .toast.show{opacity:1;}
 .danger-zone{background:#fff5f5;border:1px solid #f5c6c5;border-radius:12px;padding:16px;margin-bottom:16px;}
 .danger-zone-title{font-size:13px;font-weight:600;color:#c5221f;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+/* Loading screen */
+#loading-screen{position:fixed;top:0;left:0;right:0;bottom:0;background:#f5f5f5;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;}
+.spinner{width:40px;height:40px;border:3px solid #e5e5e5;border-top-color:#1a73e8;border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:16px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-text{font-size:14px;color:#999;}
 @media(max-width:700px){
   .hamburger{display:flex;align-items:center;}
   .sidebar{position:fixed;top:0;left:-220px;height:100%;z-index:100;transition:left 0.25s;box-shadow:2px 0 12px rgba(0,0,0,0.1);}
@@ -111,9 +114,16 @@ select.form-input{cursor:pointer;}
 </style>
 </head>
 <body>
+
+<!-- Loading screen shown while Firebase loads -->
+<div id="loading-screen">
+  <div class="spinner"></div>
+  <div class="loading-text">Connecting to database...</div>
+</div>
+
 <div id="toast" class="toast"></div>
 
-<div id="login-screen">
+<div id="login-screen" style="display:none;">
 <div class="login-wrap">
   <div class="login-card">
     <div class="login-logo">
@@ -185,21 +195,24 @@ select.form-input{cursor:pointer;}
 <div id="modal-container"></div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script>
-const firebaseConfig = {
+var firebaseConfig = {
   apiKey: "AIzaSyCrJHFs8luTgVxDlV-143tAJUN6NqT2MCY",
   authDomain: "rice-b917e.firebaseapp.com",
   projectId: "rice-b917e",
   storageBucket: "rice-b917e.firebasestorage.app",
   messagingSenderId: "772640090723",
-  appId: "1:772640090723:web:97aa6db6e61f1431b26656",
-  measurementId: "G-2FTERZ52QR"
+  appId: "1:772640090723:web:97aa6db6e61f1431b26656"
 };
 firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+var db = firebase.firestore();
+var DOC_REF = db.collection('app').doc('ricetrade');
+
 /* ── UTILITIES ─────────────────────────────────────────────── */
-const PKR = n => '₨ ' + Number(n||0).toLocaleString('en-PK',{maximumFractionDigits:0});
-const today = () => new Date().toISOString().split('T')[0];
+var PKR = function(n){ return '₨ ' + Number(n||0).toLocaleString('en-PK',{maximumFractionDigits:0}); };
+var today = function(){ return new Date().toISOString().split('T')[0]; };
 
 function showToast(msg, dur){
   dur = dur||2500;
@@ -208,18 +221,15 @@ function showToast(msg, dur){
   t.classList.add('show');
   setTimeout(function(){ t.classList.remove('show'); }, dur);
 }
+function confirmDlg(msg){ return window.confirm(msg); }
 
-function confirmDlg(msg){
-  return window.confirm(msg);
-}
-
-/* ── STATE ─────────────────────────────────────────────────── */
+/* ── DEFAULT DATA ──────────────────────────────────────────── */
 var DEFAULT_STATE = {
-  bizName: 'Ric',
+  bizName: 'RiceTrade Pro',
   users: {
-    owner:   {name:'Owner',    role:'Administrator', initials:'OW', isOwner:true,  password:'1234'},
-    trader1: {name:'Ahmad Khan', role:'Trader',      initials:'AK', isOwner:false, password:'1234'},
-    trader2: {name:'Bilal Raza', role:'Trader',      initials:'BR', isOwner:false, password:'1234'}
+    owner:   {name:'Owner',      role:'Administrator', initials:'OW', isOwner:true,  password:'1234'},
+    trader1: {name:'Ahmad Khan', role:'Trader',        initials:'AK', isOwner:false, password:'1234'},
+    trader2: {name:'Bilal Raza', role:'Trader',        initials:'BR', isOwner:false, password:'1234'}
   },
   traders:[
     {id:1, name:'Ahmad Khan', username:'trader1', phone:'0300-1234567', area:'Lahore',     status:'active', joinDate:'2024-01-15'},
@@ -227,100 +237,86 @@ var DEFAULT_STATE = {
     {id:3, name:'Usman Ali',  username:'trader3', phone:'0321-5554444', area:'Faisalabad', status:'active', joinDate:'2024-06-01'}
   ],
   inventory:[
-    {id:1, name:'Basmati (Long Grain)', sku:'BAS-LG',   qty:450,  totalCost:3825000, buyPrice:8500,  variety:'Basmati',      size:'50kg'},
-    {id:2, name:'Basmati (25kg bags)',  sku:'BAS-25',   qty:200,  totalCost:880000,  buyPrice:4400,  variety:'Basmati',      size:'25kg'},
-    {id:3, name:'Jasmine Rice (50kg)',  sku:'JAS-50',   qty:320,  totalCost:2304000, buyPrice:7200,  variety:'Jasmine',      size:'50kg'},
-    {id:4, name:'Irri-6 (50kg)',        sku:'IRRI-50',  qty:580,  totalCost:3190000, buyPrice:5500,  variety:'Irri-6',       size:'50kg'},
-    {id:5, name:'Irri-6 (5kg)',         sku:'IRRI-5',   qty:1200, totalCost:780000,  buyPrice:650,   variety:'Irri-6',       size:'5kg'},
-    {id:6, name:'Super Kernel (50kg)',  sku:'SK-50',    qty:95,   totalCost:874000,  buyPrice:9200,  variety:'Super Kernel', size:'50kg'}
+    {id:1, name:'Basmati (Long Grain)', sku:'BAS-LG',  qty:450,  totalCost:3825000, buyPrice:8500, variety:'Basmati',      size:'50kg'},
+    {id:2, name:'Basmati (25kg bags)',  sku:'BAS-25',  qty:200,  totalCost:880000,  buyPrice:4400, variety:'Basmati',      size:'25kg'},
+    {id:3, name:'Jasmine Rice (50kg)',  sku:'JAS-50',  qty:320,  totalCost:2304000, buyPrice:7200, variety:'Jasmine',      size:'50kg'},
+    {id:4, name:'Irri-6 (50kg)',        sku:'IRRI-50', qty:580,  totalCost:3190000, buyPrice:5500, variety:'Irri-6',       size:'50kg'},
+    {id:5, name:'Irri-6 (5kg)',         sku:'IRRI-5',  qty:1200, totalCost:780000,  buyPrice:650,  variety:'Irri-6',       size:'5kg'},
+    {id:6, name:'Super Kernel (50kg)',  sku:'SK-50',   qty:95,   totalCost:874000,  buyPrice:9200, variety:'Super Kernel', size:'50kg'}
   ],
   sales:[
-    {id:1, date:'2026-06-27', traderId:1, traderName:'Ahmad Khan', item:'Basmati (Long Grain)', itemId:1, qty:20, unitPrice:9800, total:196000, buyer:'Al-Falah Traders',   status:'paid'},
-    {id:2, date:'2026-06-27', traderId:2, traderName:'Bilal Raza', item:'Irri-6 (50kg)',        itemId:4, qty:40, unitPrice:6300, total:252000, buyer:'Siddiqui & Sons',     status:'paid'},
-    {id:3, date:'2026-06-26', traderId:1, traderName:'Ahmad Khan', item:'Jasmine Rice (50kg)',  itemId:3, qty:15, unitPrice:8400, total:126000, buyer:'Rahman Enterprises',  status:'pending'},
-    {id:4, date:'2026-06-26', traderId:3, traderName:'Usman Ali',  item:'Irri-6 (5kg)',         itemId:5, qty:200,unitPrice:750,  total:150000, buyer:'City Mart',           status:'paid'},
-    {id:5, date:'2026-06-25', traderId:2, traderName:'Bilal Raza', item:'Super Kernel (50kg)',  itemId:6, qty:10, unitPrice:10500,total:105000, buyer:'Karachi Wholesale',   status:'paid'}
+    {id:1, date:'2026-06-27', traderId:1, traderName:'Ahmad Khan', item:'Basmati (Long Grain)', itemId:1, qty:20,  unitPrice:9800,  total:196000, buyer:'Al-Falah Traders',  status:'paid'},
+    {id:2, date:'2026-06-27', traderId:2, traderName:'Bilal Raza', item:'Irri-6 (50kg)',        itemId:4, qty:40,  unitPrice:6300,  total:252000, buyer:'Siddiqui & Sons',   status:'paid'},
+    {id:3, date:'2026-06-26', traderId:1, traderName:'Ahmad Khan', item:'Jasmine Rice (50kg)',  itemId:3, qty:15,  unitPrice:8400,  total:126000, buyer:'Rahman Enterprises', status:'pending'},
+    {id:4, date:'2026-06-26', traderId:3, traderName:'Usman Ali',  item:'Irri-6 (5kg)',         itemId:5, qty:200, unitPrice:750,   total:150000, buyer:'City Mart',          status:'paid'},
+    {id:5, date:'2026-06-25', traderId:2, traderName:'Bilal Raza', item:'Super Kernel (50kg)',  itemId:6, qty:10,  unitPrice:10500, total:105000, buyer:'Karachi Wholesale',  status:'paid'}
   ],
   expenses:[
-    {id:1, date:'2026-06-27', category:'Fuel',      amount:12000, description:'Delivery truck fuel - Lahore run',       traderId:1, traderName:'Ahmad Khan', receipt:'EXP-001'},
-    {id:2, date:'2026-06-27', category:'Transport', amount:35000, description:'Freight charges - Karachi to Lahore',    traderId:2, traderName:'Bilal Raza', receipt:'EXP-002'},
-    {id:3, date:'2026-06-26', category:'Labour',    amount:8500,  description:'Loading/unloading wages',                traderId:1, traderName:'Ahmad Khan', receipt:'EXP-003'},
-    {id:4, date:'2026-06-26', category:'Other',     amount:5000,  description:'Warehouse rent (partial)',               traderId:null, traderName:'Owner',   receipt:'EXP-004'},
-    {id:5, date:'2026-06-25', category:'Fuel',      amount:9500,  description:'Delivery van fuel - Faisalabad',         traderId:3, traderName:'Usman Ali',  receipt:'EXP-005'}
+    {id:1, date:'2026-06-27', category:'Fuel',      amount:12000, description:'Delivery truck fuel - Lahore run',    traderId:1,    traderName:'Ahmad Khan', receipt:'EXP-001'},
+    {id:2, date:'2026-06-27', category:'Transport', amount:35000, description:'Freight charges - Karachi to Lahore', traderId:2,    traderName:'Bilal Raza', receipt:'EXP-002'},
+    {id:3, date:'2026-06-26', category:'Labour',    amount:8500,  description:'Loading/unloading wages',             traderId:1,    traderName:'Ahmad Khan', receipt:'EXP-003'},
+    {id:4, date:'2026-06-26', category:'Other',     amount:5000,  description:'Warehouse rent (partial)',            traderId:null, traderName:'Owner',      receipt:'EXP-004'},
+    {id:5, date:'2026-06-25', category:'Fuel',      amount:9500,  description:'Delivery van fuel - Faisalabad',      traderId:3,    traderName:'Usman Ali',  receipt:'EXP-005'}
   ]
 };
 
 var STATE = {};
 var currentUser = null;
 
-/* SAVE TO FIRESTORE (shared cloud data) */
+/* ── FIREBASE SAVE ─────────────────────────────────────────── */
 function saveState(){
-  try{
-    db.collection("app").doc("ricetrade").set(STATE);
-  }catch(e){
-    console.log("Save failed:", e);
-  }
+  DOC_REF.set(STATE).catch(function(e){ console.error('Save failed:', e); });
 }
 
-/* LOAD FROM FIRESTORE */
-async function loadState(){
-  try{
-    const doc = await db.collection("app").doc("ricetrade").get();
+/* ── FIREBASE LOAD — called once on startup ────────────────── */
+function loadState(){
+  document.getElementById('loading-screen').style.display = 'flex';
+  document.getElementById('login-screen').style.display   = 'none';
 
+  DOC_REF.get().then(function(doc){
     if(doc.exists){
       STATE = doc.data();
     } else {
+      // First time: seed the database with default data
       STATE = JSON.parse(JSON.stringify(DEFAULT_STATE));
-      saveState();
+      DOC_REF.set(STATE);
     }
 
-    // safety migration (important)
-    STATE.inventory.forEach(function(i){
-      if(!i.totalCost){
-        i.totalCost = (i.buyPrice||0) * (i.qty||0);
-      }
-    });
-
-  }catch(e){
-    console.log("Load failed:", e);
-    STATE = JSON.parse(JSON.stringify(DEFAULT_STATE));
-  }
-}
-
-loadState();
-
-    // migrate: ensure every inventory item has totalCost
+    // Migrate: ensure every inventory item has totalCost
     STATE.inventory.forEach(function(i){
       if(!i.totalCost) i.totalCost = (i.buyPrice||0) * (i.qty||0);
     });
 
-  } catch(e){
-    STATE = JSON.parse(JSON.stringify(DEFAULT_STATE));
-    console.log("Load failed:", e);
-  }
-}
+    // Hide loader, show login
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('login-screen').style.display   = 'flex';
+    document.getElementById('login-biz-name').textContent   = STATE.bizName || 'RiceTrade Pro';
 
-loadState();
+  }).catch(function(e){
+    console.error('Load failed:', e);
+    // Fallback to default if Firebase fails
+    STATE = JSON.parse(JSON.stringify(DEFAULT_STATE));
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('login-screen').style.display   = 'flex';
+    showToast('Could not connect to database. Using local data.', 4000);
+  });
+}
 
 /* ── AVG PRICE HELPER ──────────────────────────────────────── */
 function calcAvgPrice(item){
   if(!item.qty || item.qty <= 0) return item.buyPrice || 0;
-  return Math.round((item.totalCost || 0) / item.qty);
+  return Math.round((item.totalCost||0) / item.qty);
 }
-function calcSaleCOGS(s){
-  if(s.cogs != null) return s.cogs;
-  var inv = STATE.inventory.find(function(i){ return i.id === s.itemId; });
-  return s.qty * (inv ? calcAvgPrice(inv) : 0);
-}
+
 /* ── MODAL ─────────────────────────────────────────────────── */
 function openModal(html){
   document.getElementById('modal-container').innerHTML =
-    '<div class="modal-overlay" id="modal-overlay"><div class="modal">' + html + '</div></div>';
+    '<div class="modal-overlay" id="modal-overlay"><div class="modal">'+html+'</div></div>';
   document.getElementById('modal-overlay').addEventListener('click', function(e){
-    if(e.target === this) closeModal();
+    if(e.target===this) closeModal();
   });
 }
-function closeModal(){ document.getElementById('modal-container').innerHTML = ''; }
+function closeModal(){ document.getElementById('modal-container').innerHTML=''; }
 
 /* ── SIDEBAR ───────────────────────────────────────────────── */
 function openSidebar(){
@@ -334,33 +330,32 @@ function closeSidebar(){
 
 /* ── AUTH ──────────────────────────────────────────────────── */
 function doLogin(){
-  var u = document.getElementById('login-user').value.trim().toLowerCase();
-  var p = document.getElementById('login-pass').value;
+  var u    = document.getElementById('login-user').value.trim().toLowerCase();
+  var p    = document.getElementById('login-pass').value;
   var user = STATE.users[u];
-  if(user && p === user.password){
+  if(user && p===user.password){
     currentUser = {name:user.name, role:user.role, initials:user.initials, isOwner:user.isOwner, username:u};
     document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app-screen').style.display = 'block';
-    document.getElementById('sidebar-name').textContent = currentUser.name;
-    document.getElementById('sidebar-role').textContent = currentUser.role;
+    document.getElementById('app-screen').style.display   = 'block';
+    document.getElementById('sidebar-name').textContent   = currentUser.name;
+    document.getElementById('sidebar-role').textContent   = currentUser.role;
     document.getElementById('sidebar-avatar').textContent = currentUser.initials;
-    document.getElementById('sidebar-biz-name').textContent = STATE.bizName || 'RiceTrade Pro';
-    document.getElementById('login-biz-name').textContent  = STATE.bizName || 'RiceTrade Pro';
+    document.getElementById('sidebar-biz-name').textContent = STATE.bizName||'RiceTrade Pro';
     document.getElementById('topbar-date').textContent = new Date().toLocaleDateString('en-PK',{weekday:'short',year:'numeric',month:'short',day:'numeric'});
     if(currentUser.isOwner){
-      document.getElementById('owner-badge').style.display = 'inline-flex';
-      document.getElementById('owner-nav-section').style.display = '';
-      document.getElementById('nav-traders').style.display = '';
-      document.getElementById('nav-reports').style.display = '';
-      document.getElementById('nav-settings').style.display = '';
+      document.getElementById('owner-badge').style.display        = 'inline-flex';
+      document.getElementById('owner-nav-section').style.display  = '';
+      document.getElementById('nav-traders').style.display        = '';
+      document.getElementById('nav-reports').style.display        = '';
+      document.getElementById('nav-settings').style.display       = '';
     } else {
-      document.getElementById('owner-badge').style.display = 'none';
-      document.getElementById('owner-nav-section').style.display = 'none';
-      document.getElementById('nav-traders').style.display = 'none';
-      document.getElementById('nav-reports').style.display = 'none';
-      document.getElementById('nav-settings').style.display = 'none';
-      document.getElementById('sidebar-avatar').style.background = '#e6f4ea';
-      document.getElementById('sidebar-avatar').style.color = '#188038';
+      document.getElementById('owner-badge').style.display        = 'none';
+      document.getElementById('owner-nav-section').style.display  = 'none';
+      document.getElementById('nav-traders').style.display        = 'none';
+      document.getElementById('nav-reports').style.display        = 'none';
+      document.getElementById('nav-settings').style.display       = 'none';
+      document.getElementById('sidebar-avatar').style.background  = '#e6f4ea';
+      document.getElementById('sidebar-avatar').style.color       = '#188038';
     }
     showPage('dashboard');
   } else {
@@ -371,29 +366,32 @@ function doLogin(){
 function doLogout(){
   currentUser = null;
   document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('app-screen').style.display = 'none';
-  document.getElementById('login-error').style.display = 'none';
+  document.getElementById('app-screen').style.display   = 'none';
+  document.getElementById('login-error').style.display  = 'none';
   document.getElementById('login-user').value = '';
   document.getElementById('login-pass').value = '';
 }
 
 /* ── PAGE ROUTER ───────────────────────────────────────────── */
-var PAGE_TITLES = {dashboard:'Dashboard', sales:'Daily Sales', inventory:'Inventory', expenses:'Expenses', traders:'Traders', reports:'Reports', settings:'Settings'};
+var PAGE_TITLES    = {dashboard:'Dashboard',sales:'Daily Sales',inventory:'Inventory',expenses:'Expenses',traders:'Traders',reports:'Reports',settings:'Settings'};
 var PAGE_RENDERERS = {};
 
 function showPage(page){
   document.querySelectorAll('.nav-item').forEach(function(el){ el.classList.remove('active'); });
   var navEl = document.getElementById('nav-'+page);
   if(navEl) navEl.classList.add('active');
-  document.getElementById('page-title').textContent = PAGE_TITLES[page] || page;
-  document.getElementById('main-content').innerHTML = '';
+  document.getElementById('page-title').textContent      = PAGE_TITLES[page]||page;
+  document.getElementById('main-content').innerHTML      = '';
   closeModal();
   closeSidebar();
   if(PAGE_RENDERERS[page]) PAGE_RENDERERS[page]();
 }
 
-/* ── STATIC WIRING (runs once DOM ready) ───────────────────── */
+/* ── DOM READY WIRING ──────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', function(){
+  // Start Firebase load immediately
+  loadState();
+
   document.getElementById('login-btn').addEventListener('click', doLogin);
   document.getElementById('login-pass').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
   document.getElementById('logout-btn').addEventListener('click', doLogout);
@@ -413,24 +411,23 @@ document.addEventListener('DOMContentLoaded', function(){
    DASHBOARD
 ══════════════════════════════════════════════════════════════ */
 PAGE_RENDERERS.dashboard = function(){
-  var td = today();
-  var totalSales   = STATE.sales.reduce(function(a,s){ return a+s.total; }, 0);
-  var todaySales   = STATE.sales.filter(function(s){ return s.date===td; }).reduce(function(a,s){ return a+s.total; }, 0);
-  var totalExp     = STATE.expenses.reduce(function(a,e){ return a+e.amount; }, 0);
-  var totalInvQty  = STATE.inventory.reduce(function(a,i){ return a+i.qty; }, 0);
-  var lowStock     = STATE.inventory.filter(function(i){ return i.qty<100; }).length;
-  var profit       = totalSales - totalExp;
-  var recentSales  = (currentUser.isOwner ? STATE.sales : STATE.sales.filter(function(s){ return s.traderName===currentUser.name; })).slice(0,5);
+  var td          = today();
+  var totalSales  = STATE.sales.reduce(function(a,s){ return a+s.total; },0);
+  var todaySales  = STATE.sales.filter(function(s){ return s.date===td; }).reduce(function(a,s){ return a+s.total; },0);
+  var totalExp    = STATE.expenses.reduce(function(a,e){ return a+e.amount; },0);
+  var totalInvQty = STATE.inventory.reduce(function(a,i){ return a+i.qty; },0);
+  var lowStock    = STATE.inventory.filter(function(i){ return i.qty<100; }).length;
+  var profit      = totalSales - totalExp;
+  var recentSales = (currentUser.isOwner ? STATE.sales : STATE.sales.filter(function(s){ return s.traderName===currentUser.name; })).slice(0,5);
 
   var traderHtml = '';
   if(currentUser.isOwner){
     traderHtml = STATE.traders.map(function(t){
-      var ts = STATE.sales.filter(function(s){ return s.traderId===t.id; }).reduce(function(a,s){ return a+s.total; },0);
-      var te = STATE.expenses.filter(function(e){ return e.traderId===t.id; }).reduce(function(a,e){ return a+e.amount; },0);
+      var ts  = STATE.sales.filter(function(s){ return s.traderId===t.id; }).reduce(function(a,s){ return a+s.total; },0);
+      var te  = STATE.expenses.filter(function(e){ return e.traderId===t.id; }).reduce(function(a,e){ return a+e.amount; },0);
       var ini = t.name.split(' ').map(function(x){ return x[0]; }).join('');
       return '<div class="stat-row">'
-        +'<div style="display:flex;align-items:center;gap:8px;">'
-        +'<div class="trader-avatar">'+ini+'</div><span>'+t.name+'</span></div>'
+        +'<div style="display:flex;align-items:center;gap:8px;"><div class="trader-avatar">'+ini+'</div><span>'+t.name+'</span></div>'
         +'<div style="text-align:right;"><div style="font-weight:600;">'+PKR(ts)+'</div>'
         +'<div style="font-size:11px;color:#999;">Exp: '+PKR(te)+'</div></div></div>';
     }).join('');
@@ -452,23 +449,21 @@ PAGE_RENDERERS.dashboard = function(){
   }
 
   var invRows = STATE.inventory.map(function(i){
-    var pct = Math.min(100, i.qty/20);
+    var pct      = Math.min(100, i.qty/20);
     var barColor = i.qty<100?'#f29900':'#1a73e8';
     return '<div class="stat-row">'
       +'<span style="font-size:12px;">'+i.name+'</span>'
       +'<div style="display:flex;align-items:center;gap:8px;">'
-      +'<div class="progress-bar" style="width:70px;">'
-      +'<div class="progress-fill" style="width:'+pct+'%;background:'+barColor+';"></div></div>'
+      +'<div class="progress-bar" style="width:70px;"><div class="progress-fill" style="width:'+pct+'%;background:'+barColor+';"></div></div>'
       +'<span style="font-size:12px;font-weight:600;min-width:55px;text-align:right;">'+i.qty+' bags</span>'
       +'</div></div>';
   }).join('');
 
   var expCatHtml = ['Fuel','Transport','Labour','Other'].map(function(cat){
-    var amt = STATE.expenses.filter(function(e){ return e.category===cat&&(currentUser.isOwner||e.traderName===currentUser.name); }).reduce(function(a,e){ return a+e.amount; },0);
+    var amt   = STATE.expenses.filter(function(e){ return e.category===cat&&(currentUser.isOwner||e.traderName===currentUser.name); }).reduce(function(a,e){ return a+e.amount; },0);
     var icons = {Fuel:'ti-gas-station',Transport:'ti-truck',Labour:'ti-hammer',Other:'ti-dots'};
     return '<div class="stat-row">'
-      +'<div style="display:flex;align-items:center;gap:8px;">'
-      +'<i class="ti '+icons[cat]+'" style="font-size:15px;color:#999;"></i><span>'+cat+'</span></div>'
+      +'<div style="display:flex;align-items:center;gap:8px;"><i class="ti '+icons[cat]+'" style="font-size:15px;color:#999;"></i><span>'+cat+'</span></div>'
       +'<span style="font-weight:600;">'+PKR(amt)+'</span></div>';
   }).join('');
 
@@ -492,8 +487,7 @@ PAGE_RENDERERS.dashboard = function(){
           +'<div style="display:flex;gap:10px;margin-bottom:12px;">'
             +'<div class="metric-card" style="flex:1;padding:10px;"><div class="metric-label">Total Bags</div><div class="metric-value" style="font-size:18px;">'+totalInvQty.toLocaleString()+'</div></div>'
             +'<div class="metric-card" style="flex:1;padding:10px;background:'+(lowStock>0?'#fef7e0':'#fff')+';"><div class="metric-label">Low Stock</div><div class="metric-value" style="font-size:18px;color:'+(lowStock>0?'#b06000':'#1a1a1a')+';">'+lowStock+'</div></div>'
-          +'</div>'
-          +invRows
+          +'</div>'+invRows
         +'</div>'
       +'</div>'
       +'<div>'
@@ -511,8 +505,7 @@ PAGE_RENDERERS.dashboard = function(){
 ══════════════════════════════════════════════════════════════ */
 PAGE_RENDERERS.sales = function(){
   var sales = currentUser.isOwner ? STATE.sales : STATE.sales.filter(function(s){ return s.traderName===currentUser.name; });
-  var mc = document.getElementById('main-content');
-
+  var mc    = document.getElementById('main-content');
   mc.innerHTML =
     '<div style="display:flex;justify-content:flex-end;margin-bottom:14px;">'
       +'<button class="btn btn-primary" id="add-sale-btn"><i class="ti ti-plus"></i>Record Sale</button>'
@@ -523,10 +516,8 @@ PAGE_RENDERERS.sales = function(){
         +'<table><thead><tr>'
           +'<th>Date</th><th>Buyer</th><th>Item</th><th>Qty</th><th>Unit Price</th><th>Total</th>'
           +(currentUser.isOwner?'<th>Trader</th>':'')
-          +'<th>Status</th>'
-          +(currentUser.isOwner?'<th></th>':'')
-        +'</tr></thead>'
-        +'<tbody id="sales-tbody"></tbody></table>'
+          +'<th>Status</th>'+(currentUser.isOwner?'<th></th>':'')
+        +'</tr></thead><tbody id="sales-tbody"></tbody></table>'
       +'</div>'
     +'</div>';
 
@@ -539,24 +530,21 @@ PAGE_RENDERERS.sales = function(){
       tr.innerHTML =
         '<td style="color:#999;font-size:11px;">'+s.date+'</td>'
         +'<td style="font-weight:500;">'+s.buyer+'</td>'
-        +'<td>'+s.item+'</td>'
-        +'<td>'+s.qty+'</td>'
+        +'<td>'+s.item+'</td><td>'+s.qty+'</td>'
         +'<td>'+PKR(s.unitPrice)+'</td>'
         +'<td style="font-weight:600;">'+PKR(s.total)+'</td>'
         +(currentUser.isOwner?'<td><span class="badge badge-blue">'+s.traderName+'</span></td>':'')
         +'<td><span class="badge '+(s.status==='paid'?'badge-green':'badge-amber')+'">'+s.status+'</span></td>'
         +(currentUser.isOwner?'<td><button class="btn btn-sm btn-danger del-sale-btn"><i class="ti ti-trash"></i></button></td>':'');
       if(currentUser.isOwner){
-        var btn = tr.querySelector('.del-sale-btn');
-        (function(saleId){
-          btn.addEventListener('click', function(){ deleteSale(saleId); });
+        (function(sid){
+          tr.querySelector('.del-sale-btn').addEventListener('click', function(){ deleteSale(sid); });
         })(s.id);
       }
       tbody.appendChild(tr);
     });
   } else {
-    var cols = currentUser.isOwner ? 9 : 7;
-    tbody.innerHTML = '<tr><td colspan="'+cols+'"><div class="empty-state"><i class="ti ti-receipt-off"></i><p>No sales recorded yet</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="'+(currentUser.isOwner?9:7)+'"><div class="empty-state"><i class="ti ti-receipt-off"></i><p>No sales recorded yet</p></div></td></tr>';
   }
 };
 
@@ -571,7 +559,6 @@ function openAddSale(){
   var itemOpts = STATE.inventory.map(function(i){
     return '<option value="'+i.id+'">'+i.name+' ('+i.qty+' in stock)</option>';
   }).join('');
-
   openModal(
     '<div class="modal-title">Record New Sale</div>'
     +'<div class="grid-2">'
@@ -593,13 +580,11 @@ function openAddSale(){
   document.getElementById('s-qty').addEventListener('input', calcSaleTotal);
   document.getElementById('s-price').addEventListener('input', calcSaleTotal);
 }
-
 function calcSaleTotal(){
   var qty   = parseFloat(document.getElementById('s-qty').value)||0;
   var price = parseFloat(document.getElementById('s-price').value)||0;
   document.getElementById('s-total').value = PKR(qty*price);
 }
-
 function saveSale(){
   var itemId   = parseInt(document.getElementById('s-item').value);
   var traderId = parseInt(document.getElementById('s-trader').value);
@@ -608,42 +593,25 @@ function saveSale(){
   var qty      = parseInt(document.getElementById('s-qty').value)||0;
   var price    = parseFloat(document.getElementById('s-price').value)||0;
   var buyer    = document.getElementById('s-buyer').value.trim();
-  if(!buyer)              return alert('Enter buyer name');
-  if(qty<=0)              return alert('Enter a valid quantity');
-  if(!price||price<=0)    return alert('Enter a unit price');
-  if(item && qty>item.qty) return alert('Not enough stock! Only '+item.qty+' bags available.');
-
+  if(!buyer)            return alert('Enter buyer name');
+  if(qty<=0)            return alert('Enter a valid quantity');
+  if(!price||price<=0)  return alert('Enter a unit price');
+  if(item&&qty>item.qty) return alert('Not enough stock! Only '+item.qty+' bags available.');
   STATE.sales.unshift({
-    id: Date.now(),
-    date: document.getElementById('s-date').value,
-    traderId: traderId,
-    traderName: trader ? trader.name : currentUser.name,
-    item: item ? item.name : '',
-    itemId: itemId,
-    qty: qty,
-    unitPrice: price,
-    total: qty*price,
-    buyer: buyer,
-    status: document.getElementById('s-status').value
+    id:Date.now(), date:document.getElementById('s-date').value,
+    traderId:traderId, traderName:trader?trader.name:currentUser.name,
+    item:item?item.name:'', itemId:itemId, qty:qty, unitPrice:price,
+    total:qty*price, buyer:buyer, status:document.getElementById('s-status').value
   });
-  if(item){ item.qty -= qty; }
-  saveState();
-  closeModal();
-  PAGE_RENDERERS.sales();
-  showToast('Sale recorded!');
+  if(item) item.qty -= qty;
+  saveState(); closeModal(); PAGE_RENDERERS.sales(); showToast('Sale recorded!');
 }
-
 function deleteSale(id){
   if(!confirmDlg('Delete this sale record?')) return;
   var s = STATE.sales.find(function(x){ return x.id===id; });
-  if(s){
-    var item = STATE.inventory.find(function(i){ return i.id===s.itemId; });
-    if(item) item.qty += s.qty;
-  }
+  if(s){ var item=STATE.inventory.find(function(i){ return i.id===s.itemId; }); if(item) item.qty+=s.qty; }
   STATE.sales = STATE.sales.filter(function(x){ return x.id!==id; });
-  saveState();
-  PAGE_RENDERERS.sales();
-  showToast('Sale deleted.');
+  saveState(); PAGE_RENDERERS.sales(); showToast('Sale deleted.');
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -659,15 +627,10 @@ PAGE_RENDERERS.inventory = function(){
         +'<table><thead><tr>'
           +'<th>Product</th><th>Variety</th><th>Size</th><th>In Stock</th><th>Avg Buy Price</th><th>Status</th>'
           +(currentUser.isOwner?'<th></th>':'')
-        +'</tr></thead>'
-        +'<tbody id="inv-tbody"></tbody></table>'
+        +'</tr></thead><tbody id="inv-tbody"></tbody></table>'
       +'</div>'
     +'</div>';
-
-  if(currentUser.isOwner){
-    document.getElementById('add-product-btn').addEventListener('click', openAddStock);
-  }
-
+  if(currentUser.isOwner) document.getElementById('add-product-btn').addEventListener('click', openAddStock);
   var tbody = document.getElementById('inv-tbody');
   STATE.inventory.forEach(function(i){
     var avg = calcAvgPrice(i);
@@ -681,21 +644,17 @@ PAGE_RENDERERS.inventory = function(){
       +'<td>'+PKR(avg)+'</td>'
       +'<td><span class="badge '+st[0]+'">'+st[1]+'</span></td>'
       +(currentUser.isOwner
-        ?'<td style="display:flex;gap:4px;">'
-          +'<button class="btn btn-sm restock-btn"><i class="ti ti-plus"></i>Restock</button>'
-          +'<button class="btn btn-sm btn-danger del-prod-btn"><i class="ti ti-trash"></i></button>'
-        +'</td>'
-        :'');
+        ?'<td style="display:flex;gap:4px;"><button class="btn btn-sm restock-btn"><i class="ti ti-plus"></i>Restock</button>'
+          +'<button class="btn btn-sm btn-danger del-prod-btn"><i class="ti ti-trash"></i></button></td>':'');
     if(currentUser.isOwner){
-      (function(itemId){
-        tr.querySelector('.restock-btn').addEventListener('click', function(){ openRestockItem(itemId); });
-        tr.querySelector('.del-prod-btn').addEventListener('click', function(){ deleteProduct(itemId); });
+      (function(iid){
+        tr.querySelector('.restock-btn').addEventListener('click', function(){ openRestockItem(iid); });
+        tr.querySelector('.del-prod-btn').addEventListener('click', function(){ deleteProduct(iid); });
       })(i.id);
     }
     tbody.appendChild(tr);
   });
 };
-
 function openAddStock(){
   openModal(
     '<div class="modal-title">Add New Product</div>'
@@ -714,89 +673,61 @@ function openAddStock(){
   document.getElementById('ap-cancel').addEventListener('click', closeModal);
   document.getElementById('ap-save').addEventListener('click', saveStock);
 }
-
 function saveStock(){
   var name = document.getElementById('inv-name').value.trim();
   if(!name) return alert('Enter product name');
-  var qty      = parseInt(document.getElementById('inv-qty').value)||0;
-  var buyPrice = parseInt(document.getElementById('inv-buy').value)||0;
-  STATE.inventory.push({
-    id: Date.now(),
-    name: name,
-    sku: document.getElementById('inv-sku').value,
-    qty: qty,
-    buyPrice: buyPrice,
-    totalCost: qty * buyPrice,
-    sellPrice: 0,
-    variety: document.getElementById('inv-var').value,
-    size: document.getElementById('inv-size').value
-  });
-  saveState();
-  closeModal();
-  PAGE_RENDERERS.inventory();
-  showToast('Product added!');
+  var qty=parseInt(document.getElementById('inv-qty').value)||0;
+  var bp=parseInt(document.getElementById('inv-buy').value)||0;
+  STATE.inventory.push({id:Date.now(),name:name,sku:document.getElementById('inv-sku').value,qty:qty,buyPrice:bp,totalCost:qty*bp,sellPrice:0,variety:document.getElementById('inv-var').value,size:document.getElementById('inv-size').value});
+  saveState(); closeModal(); PAGE_RENDERERS.inventory(); showToast('Product added!');
 }
-
 function openRestockItem(id){
   var item = STATE.inventory.find(function(i){ return i.id===id; });
   if(!item) return;
-  var avg = calcAvgPrice(item);
   openModal(
     '<div class="modal-title">Restock — '+item.name+'</div>'
     +'<div class="metric-card" style="margin-bottom:14px;">'
-      +'<div class="metric-label">Current Stock</div>'
-      +'<div class="metric-value">'+item.qty+' bags</div>'
-      +'<div style="font-size:12px;color:#999;margin-top:4px;">Avg buy price: '+PKR(avg)+'</div>'
+      +'<div class="metric-label">Current Stock</div><div class="metric-value">'+item.qty+' bags</div>'
+      +'<div style="font-size:12px;color:#999;margin-top:4px;">Avg buy price: '+PKR(calcAvgPrice(item))+'</div>'
     +'</div>'
     +'<div class="form-group"><label class="form-label">Bags to Add</label><input class="form-input" type="number" id="restock-qty" value="50" min="1"></div>'
     +'<div class="form-group"><label class="form-label">New Batch Buy Price (₨/bag)</label><input class="form-input" type="number" id="restock-price" value="'+item.buyPrice+'"></div>'
-    +'<div style="background:#f0f4ff;padding:10px;border-radius:8px;font-size:12px;color:#555;margin-bottom:14px;">Avg price updates automatically using weighted average of existing + new stock.</div>'
+    +'<div style="background:#f0f4ff;padding:10px;border-radius:8px;font-size:12px;color:#555;margin-bottom:14px;">Avg price updates automatically using weighted average.</div>'
     +'<div class="modal-footer"><button class="btn" id="rs-cancel">Cancel</button><button class="btn btn-primary" id="rs-save">Update Stock</button></div>'
   );
   document.getElementById('rs-cancel').addEventListener('click', closeModal);
   document.getElementById('rs-save').addEventListener('click', function(){ doRestock(id); });
 }
-
 function doRestock(id){
-  var item       = STATE.inventory.find(function(i){ return i.id===id; });
+  var item=STATE.inventory.find(function(i){ return i.id===id; });
   if(!item) return;
-  var addQty     = parseInt(document.getElementById('restock-qty').value)||0;
-  var newPrice   = parseInt(document.getElementById('restock-price').value)||0;
-  if(addQty<=0)    return alert('Enter a valid quantity');
-  if(newPrice<=0)  return alert('Enter a valid price');
-  // Weighted average: (existingTotalCost + newBatchCost) / totalQty
-  var newCost    = addQty * newPrice;
-  item.totalCost = (item.totalCost||0) + newCost;
-  item.qty       += addQty;
-  item.buyPrice   = calcAvgPrice(item); // store latest avg for reference
-  saveState();
-  closeModal();
-  PAGE_RENDERERS.inventory();
-  showToast('Stock updated! New avg price: '+PKR(item.buyPrice));
+  var addQty=parseInt(document.getElementById('restock-qty').value)||0;
+  var newPrice=parseInt(document.getElementById('restock-price').value)||0;
+  if(addQty<=0)   return alert('Enter a valid quantity');
+  if(newPrice<=0) return alert('Enter a valid price');
+  item.totalCost=(item.totalCost||0)+(addQty*newPrice);
+  item.qty+=addQty;
+  item.buyPrice=calcAvgPrice(item);
+  saveState(); closeModal(); PAGE_RENDERERS.inventory(); showToast('Stock updated! New avg: '+PKR(item.buyPrice));
 }
-
 function deleteProduct(id){
-  if(!confirmDlg('Remove this product from inventory?')) return;
-  STATE.inventory = STATE.inventory.filter(function(i){ return i.id!==id; });
-  saveState();
-  PAGE_RENDERERS.inventory();
-  showToast('Product removed.');
+  if(!confirmDlg('Remove this product?')) return;
+  STATE.inventory=STATE.inventory.filter(function(i){ return i.id!==id; });
+  saveState(); PAGE_RENDERERS.inventory(); showToast('Product removed.');
 }
 
 /* ══════════════════════════════════════════════════════════════
    EXPENSES
 ══════════════════════════════════════════════════════════════ */
 PAGE_RENDERERS.expenses = function(){
-  var expenses = currentUser.isOwner ? STATE.expenses : STATE.expenses.filter(function(e){ return e.traderName===currentUser.name; });
-  var total    = expenses.reduce(function(a,e){ return a+e.amount; }, 0);
-
-  var catCards = ['Fuel','Transport','Labour'].map(function(cat){
-    var amt = expenses.filter(function(e){ return e.category===cat; }).reduce(function(a,e){ return a+e.amount; },0);
+  var expenses=currentUser.isOwner?STATE.expenses:STATE.expenses.filter(function(e){ return e.traderName===currentUser.name; });
+  var total=expenses.reduce(function(a,e){ return a+e.amount; },0);
+  var catCards=['Fuel','Transport','Labour'].map(function(cat){
+    var amt=expenses.filter(function(e){ return e.category===cat; }).reduce(function(a,e){ return a+e.amount; },0);
     return '<div class="metric-card" style="padding:10px;"><div class="metric-label">'+cat+'</div><div class="metric-value" style="font-size:16px;">'+PKR(amt)+'</div></div>';
   }).join('');
-
-  var mc = document.getElementById('main-content');
-  mc.innerHTML =
+  var mc=document.getElementById('main-content');
+  mc.innerHTML=
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px;flex-wrap:wrap;">'
       +'<div class="grid-3" style="gap:8px;flex:1;min-width:0;">'+catCards+'</div>'
       +'<button class="btn btn-primary" id="add-exp-btn"><i class="ti ti-plus"></i>Add Expense</button>'
@@ -806,51 +737,37 @@ PAGE_RENDERERS.expenses = function(){
       +'<div style="overflow-x:auto;">'
         +'<table><thead><tr>'
           +'<th>Date</th><th>Category</th><th>Description</th><th>Amount</th>'
-          +(currentUser.isOwner?'<th>Trader</th>':'')
-          +'<th>Receipt</th>'
-          +(currentUser.isOwner?'<th></th>':'')
-        +'</tr></thead>'
-        +'<tbody id="exp-tbody"></tbody></table>'
+          +(currentUser.isOwner?'<th>Trader</th>':'')+'<th>Receipt</th>'+(currentUser.isOwner?'<th></th>':'')
+        +'</tr></thead><tbody id="exp-tbody"></tbody></table>'
       +'</div>'
     +'</div>';
-
   document.getElementById('add-exp-btn').addEventListener('click', openAddExpense);
-
-  var tbody = document.getElementById('exp-tbody');
+  var tbody=document.getElementById('exp-tbody');
   if(expenses.length){
     expenses.forEach(function(e){
-      var catColor = e.category==='Fuel'?'badge-amber':e.category==='Transport'?'badge-blue':e.category==='Labour'?'badge-green':'badge-gray';
-      var tr = document.createElement('tr');
-      tr.innerHTML =
+      var cc=e.category==='Fuel'?'badge-amber':e.category==='Transport'?'badge-blue':e.category==='Labour'?'badge-green':'badge-gray';
+      var tr=document.createElement('tr');
+      tr.innerHTML=
         '<td style="color:#999;font-size:11px;">'+e.date+'</td>'
-        +'<td><span class="badge '+catColor+'">'+e.category+'</span></td>'
+        +'<td><span class="badge '+cc+'">'+e.category+'</span></td>'
         +'<td>'+e.description+'</td>'
         +'<td style="font-weight:600;color:#c5221f;">'+PKR(e.amount)+'</td>'
         +(currentUser.isOwner?'<td>'+e.traderName+'</td>':'')
         +'<td style="font-size:11px;color:#999;">'+e.receipt+'</td>'
         +(currentUser.isOwner?'<td><button class="btn btn-sm btn-danger del-exp-btn"><i class="ti ti-trash"></i></button></td>':'');
       if(currentUser.isOwner){
-        (function(expId){
-          tr.querySelector('.del-exp-btn').addEventListener('click', function(){ deleteExpense(expId); });
-        })(e.id);
+        (function(eid){ tr.querySelector('.del-exp-btn').addEventListener('click', function(){ deleteExpense(eid); }); })(e.id);
       }
       tbody.appendChild(tr);
     });
   } else {
-    var cols = currentUser.isOwner ? 7 : 5;
-    tbody.innerHTML = '<tr><td colspan="'+cols+'"><div class="empty-state"><i class="ti ti-cash-off"></i><p>No expenses recorded</p></div></td></tr>';
+    tbody.innerHTML='<tr><td colspan="'+(currentUser.isOwner?7:5)+'"><div class="empty-state"><i class="ti ti-cash-off"></i><p>No expenses recorded</p></div></td></tr>';
   }
 };
-
 function openAddExpense(){
-  var traderOpts = '';
-  if(currentUser.isOwner){
-    traderOpts = '<option value="">Owner (General)</option>';
-    STATE.traders.forEach(function(t){ traderOpts += '<option value="'+t.id+'">'+t.name+'</option>'; });
-  } else {
-    var me = STATE.traders.find(function(t){ return t.name===currentUser.name; });
-    traderOpts = '<option value="'+(me?me.id:'')+'">'+currentUser.name+'</option>';
-  }
+  var traderOpts='';
+  if(currentUser.isOwner){ traderOpts='<option value="">Owner (General)</option>'; STATE.traders.forEach(function(t){ traderOpts+='<option value="'+t.id+'">'+t.name+'</option>'; }); }
+  else { var me=STATE.traders.find(function(t){ return t.name===currentUser.name; }); traderOpts='<option value="'+(me?me.id:'')+'">'+currentUser.name+'</option>'; }
   openModal(
     '<div class="modal-title">Add Expense</div>'
     +'<div class="grid-2">'
@@ -867,72 +784,47 @@ function openAddExpense(){
   document.getElementById('ae-cancel').addEventListener('click', closeModal);
   document.getElementById('ae-save').addEventListener('click', saveExpense);
 }
-
 function saveExpense(){
-  var desc = document.getElementById('ex-desc').value.trim();
-  var amt  = parseFloat(document.getElementById('ex-amt').value)||0;
+  var desc=document.getElementById('ex-desc').value.trim();
+  var amt=parseFloat(document.getElementById('ex-amt').value)||0;
   if(!desc) return alert('Enter a description');
   if(!amt)  return alert('Enter an amount');
-  var traderVal = document.getElementById('ex-trader').value;
-  var traderId  = traderVal ? parseInt(traderVal) : null;
-  var trader    = traderId ? STATE.traders.find(function(t){ return t.id===traderId; }) : null;
-  STATE.expenses.unshift({
-    id: Date.now(),
-    date: document.getElementById('ex-date').value,
-    category: document.getElementById('ex-cat').value,
-    amount: amt,
-    description: desc,
-    traderId: traderId,
-    traderName: trader ? trader.name : (currentUser.isOwner ? 'Owner' : currentUser.name),
-    receipt: 'EXP-'+String(STATE.expenses.length+1).padStart(3,'0')
-  });
-  saveState();
-  closeModal();
-  PAGE_RENDERERS.expenses();
-  showToast('Expense saved!');
+  var tv=document.getElementById('ex-trader').value;
+  var tid=tv?parseInt(tv):null;
+  var trader=tid?STATE.traders.find(function(t){ return t.id===tid; }):null;
+  STATE.expenses.unshift({id:Date.now(),date:document.getElementById('ex-date').value,category:document.getElementById('ex-cat').value,amount:amt,description:desc,traderId:tid,traderName:trader?trader.name:(currentUser.isOwner?'Owner':currentUser.name),receipt:'EXP-'+String(STATE.expenses.length+1).padStart(3,'0')});
+  saveState(); closeModal(); PAGE_RENDERERS.expenses(); showToast('Expense saved!');
 }
-
 function deleteExpense(id){
   if(!confirmDlg('Delete this expense?')) return;
-  STATE.expenses = STATE.expenses.filter(function(e){ return e.id!==id; });
-  saveState();
-  PAGE_RENDERERS.expenses();
-  showToast('Expense deleted.');
+  STATE.expenses=STATE.expenses.filter(function(e){ return e.id!==id; });
+  saveState(); PAGE_RENDERERS.expenses(); showToast('Expense deleted.');
 }
 
 /* ══════════════════════════════════════════════════════════════
    TRADERS
 ══════════════════════════════════════════════════════════════ */
 PAGE_RENDERERS.traders = function(){
-  var mc = document.getElementById('main-content');
-  var cards = '';
-  if(STATE.traders.length){
-    cards = STATE.traders.map(function(t){
-      var ts   = STATE.sales.filter(function(s){ return s.traderId===t.id; }).reduce(function(a,s){ return a+s.total; },0);
-      var te   = STATE.expenses.filter(function(e){ return e.traderId===t.id; }).reduce(function(a,e){ return a+e.amount; },0);
-      var txns = STATE.sales.filter(function(s){ return s.traderId===t.id; }).length;
-      var ini  = t.name.split(' ').map(function(x){ return x[0]; }).join('');
-      return '<div class="card" style="margin-bottom:0;">'
-        +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">'
-          +'<div class="trader-avatar" style="width:42px;height:42px;font-size:14px;">'+ini+'</div>'
-          +'<div><div style="font-weight:600;">'+t.name+'</div><div style="font-size:11px;color:#999;">'+(t.area||'—')+' · '+(t.phone||'—')+'</div></div>'
-        +'</div>'
-        +'<div class="stat-row"><span style="font-size:12px;color:#999;">Total Sales</span><span style="font-weight:600;color:#188038;">'+PKR(ts)+'</span></div>'
-        +'<div class="stat-row"><span style="font-size:12px;color:#999;">Expenses</span><span style="font-weight:600;color:#c5221f;">'+PKR(te)+'</span></div>'
-        +'<div class="stat-row"><span style="font-size:12px;color:#999;">Transactions</span><span style="font-weight:600;">'+txns+'</span></div>'
-        +'<div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;">'
-          +'<span class="badge badge-green">'+t.status+'</span>'
-          +'<span style="font-size:11px;color:#999;">Since '+t.joinDate+'</span>'
-        +'</div></div>';
-    }).join('');
-  } else {
-    cards = '<div style="grid-column:1/-1;"><div class="empty-state"><i class="ti ti-users"></i><p>No traders. Add them in Settings.</p></div></div>';
-  }
-  mc.innerHTML =
-    '<div style="display:flex;justify-content:flex-end;margin-bottom:14px;">'
-      +'<button class="btn btn-primary" id="go-settings-btn"><i class="ti ti-settings"></i>Manage in Settings</button>'
-    +'</div>'
-    +'<div class="grid-3">'+cards+'</div>';
+  var mc=document.getElementById('main-content');
+  var cards=STATE.traders.length?STATE.traders.map(function(t){
+    var ts=STATE.sales.filter(function(s){ return s.traderId===t.id; }).reduce(function(a,s){ return a+s.total; },0);
+    var te=STATE.expenses.filter(function(e){ return e.traderId===t.id; }).reduce(function(a,e){ return a+e.amount; },0);
+    var txns=STATE.sales.filter(function(s){ return s.traderId===t.id; }).length;
+    var ini=t.name.split(' ').map(function(x){ return x[0]; }).join('');
+    return '<div class="card" style="margin-bottom:0;">'
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">'
+        +'<div class="trader-avatar" style="width:42px;height:42px;font-size:14px;">'+ini+'</div>'
+        +'<div><div style="font-weight:600;">'+t.name+'</div><div style="font-size:11px;color:#999;">'+(t.area||'—')+' · '+(t.phone||'—')+'</div></div>'
+      +'</div>'
+      +'<div class="stat-row"><span style="font-size:12px;color:#999;">Total Sales</span><span style="font-weight:600;color:#188038;">'+PKR(ts)+'</span></div>'
+      +'<div class="stat-row"><span style="font-size:12px;color:#999;">Expenses</span><span style="font-weight:600;color:#c5221f;">'+PKR(te)+'</span></div>'
+      +'<div class="stat-row"><span style="font-size:12px;color:#999;">Transactions</span><span style="font-weight:600;">'+txns+'</span></div>'
+      +'<div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;">'
+        +'<span class="badge badge-green">'+t.status+'</span>'
+        +'<span style="font-size:11px;color:#999;">Since '+t.joinDate+'</span>'
+      +'</div></div>';
+  }).join(''):'<div style="grid-column:1/-1;"><div class="empty-state"><i class="ti ti-users"></i><p>No traders. Add them in Settings.</p></div></div>';
+  mc.innerHTML='<div style="display:flex;justify-content:flex-end;margin-bottom:14px;"><button class="btn btn-primary" id="go-settings-btn"><i class="ti ti-settings"></i>Manage in Settings</button></div><div class="grid-3">'+cards+'</div>';
   document.getElementById('go-settings-btn').addEventListener('click', function(){ showPage('settings'); });
 };
 
@@ -940,44 +832,17 @@ PAGE_RENDERERS.traders = function(){
    REPORTS
 ══════════════════════════════════════════════════════════════ */
 PAGE_RENDERERS.reports = function(){
-  var totalSales = STATE.sales.reduce(function(a,s){ return a+s.total; },0);
-  var totalExp   = STATE.expenses.reduce(function(a,e){ return a+e.amount; },0);
-  var byTrader   = STATE.traders.map(function(t){
-    return {
-      name:  t.name,
-      sales: STATE.sales.filter(function(s){ return s.traderId===t.id; }).reduce(function(a,s){ return a+s.total; },0),
-      txns:  STATE.sales.filter(function(s){ return s.traderId===t.id; }).length,
-      exp:   STATE.expenses.filter(function(e){ return e.traderId===t.id; }).reduce(function(a,e){ return a+e.amount; },0)
-    };
+  var totalSales=STATE.sales.reduce(function(a,s){ return a+s.total; },0);
+  var totalExp=STATE.expenses.reduce(function(a,e){ return a+e.amount; },0);
+  var byTrader=STATE.traders.map(function(t){
+    return {name:t.name,sales:STATE.sales.filter(function(s){ return s.traderId===t.id; }).reduce(function(a,s){ return a+s.total; },0),txns:STATE.sales.filter(function(s){ return s.traderId===t.id; }).length,exp:STATE.expenses.filter(function(e){ return e.traderId===t.id; }).reduce(function(a,e){ return a+e.amount; },0)};
   }).sort(function(a,b){ return b.sales-a.sales; });
-
-  var lbRows = byTrader.length ? byTrader.map(function(t,i){
-    return '<tr><td style="color:#999;font-weight:600;">'+(i+1)+'</td><td>'+t.name+'</td>'
-      +'<td style="color:#188038;font-weight:600;">'+PKR(t.sales)+'</td>'
-      +'<td>'+t.txns+'</td>'
-      +'<td style="font-weight:600;">'+PKR(t.sales-t.exp)+'</td></tr>';
-  }).join('') : '<tr><td colspan="5"><div class="empty-state" style="padding:20px;"><p>No trader data yet</p></div></td></tr>';
-
-  var topProds = STATE.inventory.map(function(i){
-    return {
-      name: i.name,
-      sold: STATE.sales.filter(function(s){ return s.itemId===i.id; }).reduce(function(a,s){ return a+s.qty; },0),
-      rev:  STATE.sales.filter(function(s){ return s.itemId===i.id; }).reduce(function(a,s){ return a+s.total; },0)
-    };
-  }).sort(function(a,b){ return b.rev-a.rev; }).slice(0,5).map(function(p){
-    return '<div class="stat-row"><div><div style="font-size:13px;">'+p.name+'</div><div style="font-size:11px;color:#999;">'+p.sold+' bags sold</div></div><span style="font-weight:600;">'+PKR(p.rev)+'</span></div>';
-  }).join('');
-
-  var expBreak = ['Fuel','Transport','Labour','Other'].map(function(cat){
-    var amt = STATE.expenses.filter(function(e){ return e.category===cat; }).reduce(function(a,e){ return a+e.amount; },0);
-    var pct = totalExp>0?Math.round(amt/totalExp*100):0;
-    return '<div style="text-align:center;padding:12px;">'
-      +'<div style="font-size:26px;font-weight:700;color:#1a73e8;">'+pct+'%</div>'
-      +'<div style="font-size:12px;color:#999;margin:2px 0;">'+cat+'</div>'
-      +'<div style="font-weight:600;">'+PKR(amt)+'</div></div>';
-  }).join('');
-
-  document.getElementById('main-content').innerHTML =
+  var lbRows=byTrader.length?byTrader.map(function(t,i){
+    return '<tr><td style="color:#999;font-weight:600;">'+(i+1)+'</td><td>'+t.name+'</td><td style="color:#188038;font-weight:600;">'+PKR(t.sales)+'</td><td>'+t.txns+'</td><td style="font-weight:600;">'+PKR(t.sales-t.exp)+'</td></tr>';
+  }).join(''):'<tr><td colspan="5"><div class="empty-state" style="padding:20px;"><p>No trader data yet</p></div></td></tr>';
+  var topProds=STATE.inventory.map(function(i){ return {name:i.name,sold:STATE.sales.filter(function(s){ return s.itemId===i.id; }).reduce(function(a,s){ return a+s.qty; },0),rev:STATE.sales.filter(function(s){ return s.itemId===i.id; }).reduce(function(a,s){ return a+s.total; },0)}; }).sort(function(a,b){ return b.rev-a.rev; }).slice(0,5).map(function(p){ return '<div class="stat-row"><div><div style="font-size:13px;">'+p.name+'</div><div style="font-size:11px;color:#999;">'+p.sold+' bags sold</div></div><span style="font-weight:600;">'+PKR(p.rev)+'</span></div>'; }).join('');
+  var expBreak=['Fuel','Transport','Labour','Other'].map(function(cat){ var amt=STATE.expenses.filter(function(e){ return e.category===cat; }).reduce(function(a,e){ return a+e.amount; },0); var pct=totalExp>0?Math.round(amt/totalExp*100):0; return '<div style="text-align:center;padding:12px;"><div style="font-size:26px;font-weight:700;color:#1a73e8;">'+pct+'%</div><div style="font-size:12px;color:#999;margin:2px 0;">'+cat+'</div><div style="font-weight:600;">'+PKR(amt)+'</div></div>'; }).join('');
+  document.getElementById('main-content').innerHTML=
     '<div class="grid-4">'
       +'<div class="metric-card"><div class="metric-label">Revenue</div><div class="metric-value">'+PKR(totalSales)+'</div></div>'
       +'<div class="metric-card"><div class="metric-label">Expenses</div><div class="metric-value" style="color:#c5221f;">'+PKR(totalExp)+'</div></div>'
@@ -985,52 +850,33 @@ PAGE_RENDERERS.reports = function(){
       +'<div class="metric-card"><div class="metric-label">Total Orders</div><div class="metric-value">'+STATE.sales.length+'</div></div>'
     +'</div>'
     +'<div class="grid-2">'
-      +'<div class="card"><div class="card-header"><span class="card-title">Trader Leaderboard</span></div>'
-        +'<table><thead><tr><th>#</th><th>Trader</th><th>Sales</th><th>Txns</th><th>Net</th></tr></thead>'
-        +'<tbody>'+lbRows+'</tbody></table></div>'
+      +'<div class="card"><div class="card-header"><span class="card-title">Trader Leaderboard</span></div><table><thead><tr><th>#</th><th>Trader</th><th>Sales</th><th>Txns</th><th>Net</th></tr></thead><tbody>'+lbRows+'</tbody></table></div>'
       +'<div class="card"><div class="card-header"><span class="card-title">Top Products</span></div>'+topProds+'</div>'
     +'</div>'
-    +'<div class="card"><div class="card-header"><span class="card-title">Expense Breakdown</span></div>'
-      +'<div class="grid-4">'+expBreak+'</div>'
-    +'</div>';
+    +'<div class="card"><div class="card-header"><span class="card-title">Expense Breakdown</span></div><div class="grid-4">'+expBreak+'</div></div>';
 };
 
 /* ══════════════════════════════════════════════════════════════
    SETTINGS
 ══════════════════════════════════════════════════════════════ */
 PAGE_RENDERERS.settings = function(){
-  var bizName  = STATE.bizName||'RiceTrade Pro';
-  var userRows = Object.keys(STATE.users).map(function(uname){
-    var u = STATE.users[uname];
-    return '<div class="trader-row">'
-      +'<div style="display:flex;align-items:center;gap:10px;">'
-        +'<div class="trader-avatar" style="width:34px;height:34px;font-size:11px;'+(u.isOwner?'background:#e8f0fe;color:#1a73e8;':'background:#e6f4ea;color:#188038;')+'">'+u.initials+'</div>'
-        +'<div><div style="font-weight:500;font-size:13px;">'+u.name+'</div>'
-        +'<div style="font-size:11px;color:#999;">@'+uname+' · '+(u.isOwner?'Owner':'Trader')+'</div></div>'
-      +'</div>'
-      +'<button class="btn btn-sm btn-warning chg-pass-btn" data-uname="'+uname+'"><i class="ti ti-key"></i>Change Password</button>'
-    +'</div>';
+  var bizName=STATE.bizName||'RiceTrade Pro';
+  var userRows=Object.keys(STATE.users).map(function(uname){
+    var u=STATE.users[uname];
+    return '<div class="trader-row"><div style="display:flex;align-items:center;gap:10px;">'
+      +'<div class="trader-avatar" style="width:34px;height:34px;font-size:11px;'+(u.isOwner?'background:#e8f0fe;color:#1a73e8;':'background:#e6f4ea;color:#188038;')+'">'+u.initials+'</div>'
+      +'<div><div style="font-weight:500;font-size:13px;">'+u.name+'</div><div style="font-size:11px;color:#999;">@'+uname+' · '+(u.isOwner?'Owner':'Trader')+'</div></div>'
+      +'</div><button class="btn btn-sm btn-warning chg-pass-btn" data-uname="'+uname+'"><i class="ti ti-key"></i>Change Password</button></div>';
   }).join('');
-
-  document.getElementById('main-content').innerHTML =
+  document.getElementById('main-content').innerHTML=
     '<div class="settings-section">'
       +'<div class="settings-section-title"><i class="ti ti-building-store"></i>Business Details</div>'
       +'<div class="form-group"><label class="form-label">Business Name</label>'
-        +'<div style="display:flex;gap:8px;">'
-          +'<input class="form-input" type="text" id="set-bizname" value="'+bizName+'" placeholder="Your business name">'
-          +'<button class="btn btn-primary" id="save-biz-btn">Save</button>'
-        +'</div>'
-      +'</div>'
+        +'<div style="display:flex;gap:8px;"><input class="form-input" type="text" id="set-bizname" value="'+bizName+'"><button class="btn btn-primary" id="save-biz-btn">Save</button></div></div>'
     +'</div>'
-
-    +'<div class="settings-section">'
-      +'<div class="settings-section-title"><i class="ti ti-key"></i>Change Passwords</div>'
-      +'<p style="font-size:12px;color:#999;margin-bottom:12px;">Change any user\'s login password without re-uploading files.</p>'
-      +userRows
-    +'</div>'
-
-    +'<div class="settings-section">'
-      +'<div class="settings-section-title"><i class="ti ti-user-plus"></i>Add New Trader Account</div>'
+    +'<div class="settings-section"><div class="settings-section-title"><i class="ti ti-key"></i>Change Passwords</div>'
+      +'<p style="font-size:12px;color:#999;margin-bottom:12px;">Change any user\'s password without re-uploading files.</p>'+userRows+'</div>'
+    +'<div class="settings-section"><div class="settings-section-title"><i class="ti ti-user-plus"></i>Add New Trader Account</div>'
       +'<div class="grid-2">'
         +'<div class="form-group"><label class="form-label">Full Name</label><input class="form-input" type="text" id="set-tr-name" placeholder="Trader\'s full name"></div>'
         +'<div class="form-group"><label class="form-label">Username</label><input class="form-input" type="text" id="set-tr-user" placeholder="e.g. trader4"></div>'
@@ -1040,121 +886,64 @@ PAGE_RENDERERS.settings = function(){
         +'<div class="form-group"><label class="form-label">Area / City</label><input class="form-input" type="text" id="set-tr-area" placeholder="e.g. Multan"></div>'
       +'</div>'
       +'<div class="form-group"><label class="form-label">Password</label><input class="form-input" type="text" id="set-tr-pass" value="1234"></div>'
-      +'<button class="btn btn-primary" id="add-trader-btn"><i class="ti ti-user-plus"></i>Add Trader</button>'
-    +'</div>'
-
-    +'<div class="danger-zone">'
-      +'<div class="danger-zone-title"><i class="ti ti-alert-triangle"></i>Danger Zone</div>'
-      +'<div class="stat-row"><div><div style="font-weight:500;font-size:13px;">Clear all sales data</div><div style="font-size:11px;color:#999;">Removes all recorded sales</div></div>'
-        +'<button class="btn btn-sm btn-danger" data-clear="sales"><i class="ti ti-trash"></i>Clear Sales</button></div>'
-      +'<div class="stat-row"><div><div style="font-weight:500;font-size:13px;">Clear all expenses</div><div style="font-size:11px;color:#999;">Removes all expense records</div></div>'
-        +'<button class="btn btn-sm btn-danger" data-clear="expenses"><i class="ti ti-trash"></i>Clear Expenses</button></div>'
-      +'<div class="stat-row"><div><div style="font-weight:500;font-size:13px;">Reset inventory quantities</div><div style="font-size:11px;color:#999;">Sets all stock counts to zero</div></div>'
-        +'<button class="btn btn-sm btn-danger" data-clear="inventory"><i class="ti ti-refresh"></i>Reset Stock</button></div>'
-      +'<div class="stat-row" style="border-bottom:none;"><div><div style="font-weight:500;font-size:13px;">Factory reset — clear everything</div><div style="font-size:11px;color:#999;">Wipes ALL data and starts fresh</div></div>'
-        +'<button class="btn btn-sm btn-danger" data-clear="all"><i class="ti ti-nuclear"></i>Reset All</button></div>'
+      +'<button class="btn btn-primary" id="add-trader-btn"><i class="ti ti-user-plus"></i>Add Trader</button></div>'
+    +'<div class="danger-zone"><div class="danger-zone-title"><i class="ti ti-alert-triangle"></i>Danger Zone</div>'
+      +'<div class="stat-row"><div><div style="font-weight:500;font-size:13px;">Clear all sales data</div><div style="font-size:11px;color:#999;">Removes all recorded sales</div></div><button class="btn btn-sm btn-danger" data-clear="sales"><i class="ti ti-trash"></i>Clear Sales</button></div>'
+      +'<div class="stat-row"><div><div style="font-weight:500;font-size:13px;">Clear all expenses</div><div style="font-size:11px;color:#999;">Removes all expense records</div></div><button class="btn btn-sm btn-danger" data-clear="expenses"><i class="ti ti-trash"></i>Clear Expenses</button></div>'
+      +'<div class="stat-row"><div><div style="font-weight:500;font-size:13px;">Reset inventory quantities</div><div style="font-size:11px;color:#999;">Sets all stock counts to zero</div></div><button class="btn btn-sm btn-danger" data-clear="inventory"><i class="ti ti-refresh"></i>Reset Stock</button></div>'
+      +'<div class="stat-row" style="border-bottom:none;"><div><div style="font-weight:500;font-size:13px;">Factory reset — clear everything</div><div style="font-size:11px;color:#999;">Wipes ALL data and starts fresh</div></div><button class="btn btn-sm btn-danger" data-clear="all"><i class="ti ti-nuclear"></i>Reset All</button></div>'
     +'</div>';
-
-  // Wire all settings buttons
   document.getElementById('save-biz-btn').addEventListener('click', saveBizName);
   document.getElementById('add-trader-btn').addEventListener('click', settingsAddTrader);
-
-  document.querySelectorAll('.chg-pass-btn').forEach(function(btn){
-    btn.addEventListener('click', function(){ openChangePassword(this.getAttribute('data-uname')); });
-  });
-
-  document.querySelectorAll('[data-clear]').forEach(function(btn){
-    btn.addEventListener('click', function(){ clearData(this.getAttribute('data-clear')); });
-  });
+  document.querySelectorAll('.chg-pass-btn').forEach(function(btn){ btn.addEventListener('click', function(){ openChangePassword(this.getAttribute('data-uname')); }); });
+  document.querySelectorAll('[data-clear]').forEach(function(btn){ btn.addEventListener('click', function(){ clearData(this.getAttribute('data-clear')); }); });
 };
-
 function saveBizName(){
-  var n = document.getElementById('set-bizname').value.trim();
+  var n=document.getElementById('set-bizname').value.trim();
   if(!n) return alert('Enter a business name');
-  STATE.bizName = n;
-  saveState();
-  document.getElementById('sidebar-biz-name').textContent = n;
-  document.getElementById('login-biz-name').textContent   = n;
+  STATE.bizName=n; saveState();
+  document.getElementById('sidebar-biz-name').textContent=n;
+  document.getElementById('login-biz-name').textContent=n;
   showToast('Business name updated!');
 }
-
 function openChangePassword(username){
-  var u = STATE.users[username];
-  if(!u) return;
-  openModal(
-    '<div class="modal-title">Change Password — '+u.name+'</div>'
+  var u=STATE.users[username]; if(!u) return;
+  openModal('<div class="modal-title">Change Password — '+u.name+'</div>'
     +'<div style="background:#f0f4ff;padding:10px;border-radius:8px;font-size:12px;color:#555;margin-bottom:14px;">Username: <strong>'+username+'</strong></div>'
     +'<div class="form-group"><label class="form-label">New Password</label><input class="form-input" type="text" id="new-pass" placeholder="Enter new password"></div>'
     +'<div class="form-group"><label class="form-label">Confirm Password</label><input class="form-input" type="text" id="confirm-pass" placeholder="Repeat new password"></div>'
-    +'<div class="modal-footer"><button class="btn" id="cp-cancel">Cancel</button><button class="btn btn-primary" id="cp-save">Save Password</button></div>'
-  );
+    +'<div class="modal-footer"><button class="btn" id="cp-cancel">Cancel</button><button class="btn btn-primary" id="cp-save">Save Password</button></div>');
   document.getElementById('cp-cancel').addEventListener('click', closeModal);
   document.getElementById('cp-save').addEventListener('click', function(){ savePassword(username); });
 }
-
 function savePassword(username){
-  var np = document.getElementById('new-pass').value;
-  var cp = document.getElementById('confirm-pass').value;
-  if(!np)       return alert('Enter a new password');
-  if(np !== cp) return alert('Passwords do not match!');
-  STATE.users[username].password = np;
-  saveState();
-  closeModal();
-  showToast('Password changed!');
+  var np=document.getElementById('new-pass').value;
+  var cp=document.getElementById('confirm-pass').value;
+  if(!np) return alert('Enter a new password');
+  if(np!==cp) return alert('Passwords do not match!');
+  STATE.users[username].password=np; saveState(); closeModal(); showToast('Password changed!');
 }
-
 function settingsAddTrader(){
-  var name  = document.getElementById('set-tr-name').value.trim();
-  var uname = document.getElementById('set-tr-user').value.trim().toLowerCase();
-  var pass  = document.getElementById('set-tr-pass').value.trim();
-  if(!name)  return alert('Enter trader name');
+  var name=document.getElementById('set-tr-name').value.trim();
+  var uname=document.getElementById('set-tr-user').value.trim().toLowerCase();
+  var pass=document.getElementById('set-tr-pass').value.trim();
+  if(!name) return alert('Enter trader name');
   if(!uname) return alert('Enter a username');
-  if(!pass)  return alert('Enter a password');
-  if(STATE.users[uname]) return alert('Username already exists! Choose another.');
-  STATE.users[uname] = {
-    name: name,
-    role: 'Trader',
-    initials: name.split(' ').map(function(x){ return x[0]; }).join('').toUpperCase().slice(0,2),
-    isOwner: false,
-    password: pass
-  };
-  STATE.traders.push({
-    id: Date.now(),
-    name: name,
-    username: uname,
-    phone: document.getElementById('set-tr-phone').value,
-    area:  document.getElementById('set-tr-area').value,
-    status: 'active',
-    joinDate: today()
-  });
-  saveState();
-  showToast('Trader added!');
-  PAGE_RENDERERS.settings();
+  if(!pass) return alert('Enter a password');
+  if(STATE.users[uname]) return alert('Username already exists!');
+  STATE.users[uname]={name:name,role:'Trader',initials:name.split(' ').map(function(x){ return x[0]; }).join('').toUpperCase().slice(0,2),isOwner:false,password:pass};
+  STATE.traders.push({id:Date.now(),name:name,username:uname,phone:document.getElementById('set-tr-phone').value,area:document.getElementById('set-tr-area').value,status:'active',joinDate:today()});
+  saveState(); showToast('Trader added!'); PAGE_RENDERERS.settings();
 }
-
 function clearData(type){
-  var msgs = {
-    sales:     'Delete ALL sales records? This cannot be undone.',
-    expenses:  'Delete ALL expense records? This cannot be undone.',
-    inventory: 'Reset ALL stock quantities to zero? This cannot be undone.',
-    all:       'WIPE EVERYTHING — all sales, expenses, inventory quantities, and traders? This cannot be undone.'
-  };
+  var msgs={sales:'Delete ALL sales records? Cannot be undone.',expenses:'Delete ALL expense records? Cannot be undone.',inventory:'Reset ALL stock quantities to zero? Cannot be undone.',all:'WIPE EVERYTHING? Cannot be undone.'};
   if(!confirmDlg(msgs[type])) return;
-  if(type==='all' && !confirmDlg('Last warning — are you absolutely sure?')) return;
-
-  if(type==='sales')          STATE.sales = [];
-  else if(type==='expenses')  STATE.expenses = [];
+  if(type==='all'&&!confirmDlg('Last warning — absolutely sure?')) return;
+  if(type==='sales') STATE.sales=[];
+  else if(type==='expenses') STATE.expenses=[];
   else if(type==='inventory') STATE.inventory.forEach(function(i){ i.qty=0; i.totalCost=0; });
-  else if(type==='all'){
-    STATE.sales = [];
-    STATE.expenses = [];
-    STATE.inventory.forEach(function(i){ i.qty=0; i.totalCost=0; });
-    STATE.traders = [];
-    Object.keys(STATE.users).forEach(function(u){ if(!STATE.users[u].isOwner) delete STATE.users[u]; });
-  }
-  saveState();
-  showToast('Done — data cleared.');
-  PAGE_RENDERERS.settings();
+  else if(type==='all'){ STATE.sales=[]; STATE.expenses=[]; STATE.inventory.forEach(function(i){ i.qty=0; i.totalCost=0; }); STATE.traders=[]; Object.keys(STATE.users).forEach(function(u){ if(!STATE.users[u].isOwner) delete STATE.users[u]; }); }
+  saveState(); showToast('Done — data cleared.'); PAGE_RENDERERS.settings();
 }
 </script>
 </body>
