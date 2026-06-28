@@ -286,6 +286,26 @@ function loadState(){
     STATE.inventory.forEach(function(i){
       if(!i.totalCost) i.totalCost = (i.buyPrice||0) * (i.qty||0);
     });
+    // Migrate: stamp COGS onto old sales
+var changed = false;
+
+STATE.sales.forEach(function(sale){
+  if(sale.cogs == null){
+    var inv = STATE.inventory.find(function(i){
+      return i.id === sale.itemId;
+    });
+
+    var cp = inv ? calcAvgPrice(inv) : 0;
+
+    sale.costPrice = cp;
+    sale.cogs = sale.qty * cp;
+    changed = true;
+  }
+});
+
+if(changed){
+  saveState();
+}
 
     // Hide loader, show login
     document.getElementById('loading-screen').style.display = 'none';
